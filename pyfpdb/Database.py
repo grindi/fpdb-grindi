@@ -245,6 +245,7 @@ class Database:
     def do_connect(self, c):
         self.fdb.do_connect(c)
         self.connection = self.fdb.db
+        self.session = self.fdb.session
         self.wrongDbVersion = self.fdb.wrongDbVersion
 
         db_params = c.get_db_parameters()
