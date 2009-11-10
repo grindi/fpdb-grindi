@@ -126,8 +126,9 @@ class fpdb_db:
             raise FpdbError("unrecognised database backend:"+backend)
         # Set up alchemy
         # i'm not sure it's ok to use the same connection here
-        db_urls = {fpdb_db.MYSQL_INNODB: 'mysql://', fpdb_db.PGSQL: 'postgresql://', fpdb_db.SQLITE: 'sqllite://'}
-        self.engine = create_engine(db_urls[backend], creator = lambda: self.db)
+        db_urls = {fpdb_db.MYSQL_INNODB: 'mysql://', fpdb_db.PGSQL: 'postgresql://', fpdb_db.SQLITE: 'sqlite://'}
+        self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=True)
+        #self.engine = create_engine('sqlite:///:memory:', echo=True)
         self.session = create_session(bind = self.engine)
 
         self.cursor = self.db.cursor()
