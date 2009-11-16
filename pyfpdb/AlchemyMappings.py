@@ -76,6 +76,9 @@ class HandInternal(object):
         from datetime import datetime
 
         hand.players = hand.getAlivePlayers() # FIXME: do we really want to do it? //grindi
+                                                  #  Yes! - in tourneys, they get dealt cards. 
+                                                  # In ring they do not, but are often listed still in the hh
+                                                  # Carl G
 
         self.tableName  = hand.tablename
         self.siteHandNo = hand.handid
@@ -243,6 +246,7 @@ class HandAction(object):
         self.action = action
         # FIXME: add support for 'discards'. I have no idea \
         # how to put discarded cards here \\grindi
+            # The schema for draw games hasn't been decided - ignoring it is correct \\ Carl G
         if action in ('folds', 'checks', 'stands pat'):
             pass
         elif action in ('bets', 'calls', 'bringin'):
