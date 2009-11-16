@@ -89,7 +89,7 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('tourneysPlayersId', Integer,), #BIGINT UNSIGNED
     Column('tourneyTypeId',     Integer,), #SMALLINT UNSIGNED
     Column('tourneysPlayersId', Integer, ForeignKey("TourneyTypes.id"),), #BIGINT UNSIGNED
-    Column('tourneyTypeId',     Integer, ForeignKey("TourneyPlayers.id"),), #SMALLINT UNSIGNED
+    Column('tourneyTypeId',     Integer, ForeignKey("TourneysPlayers.id"),), #SMALLINT UNSIGNED
 
     Column('wonWhenSeenStreet1',Float), #FLOAT
     Column('wonWhenSeenStreet2',Float), #FLOAT
