@@ -246,6 +246,10 @@ class Database:
         self.database = db_params['db-databaseName']
         self.host = db_params['db-host']
 
+    def get_session(self, **kwargs):
+        """Creates binded alchemy session. Takes Session kwargs"""
+        return self.fdb.Session(**kwargs)
+
     def commit(self):
         self.fdb.db.commit()
 

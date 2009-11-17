@@ -9,6 +9,7 @@ from decimal import Decimal
 from collections import defaultdict
 
 from AlchemyTables import *
+from AlchemyFacilities import get_or_create, MappedBase
 
 
 class Site(object):
@@ -16,26 +17,19 @@ class Site(object):
     pass
 
 
-class Player(object):
+class Player(MappedBase):
     """Class reflecting Players db table"""
-
-    def __init__(self, name, siteId):
-        self.name = name
-        self.siteId = siteId
 
     @staticmethod
     def get_or_create(session, siteId, name):
-        p = session.query(Player).filter_by(name=name, siteId=siteId).first()
-        if p is None:
-            p = Player(name, siteId)
-            session.add(p)
-        return p
+        print '#'*30, 'Player.get_or_create' 
+        return get_or_create(Player, session, siteId=siteId, name=name)[0]
 
     def __str__(self):
         return '<Player "%s" on %s>' % (self.name, self.site and self.site.name)
 
 
-class Gametype(object):
+class Gametype(MappedBase):
     """Class reflecting Gametypes db table"""
 
     @staticmethod
@@ -58,13 +52,7 @@ class Gametype(object):
             gametype[f] = int(Decimal(gametype[f])*100)
 
         gametype['siteId'] = siteId
-        g = session.query(Gametype).filter_by(**gametype).first()
-        if g is None:
-            g = Gametype()
-            for k, v in gametype.iteritems():
-                setattr(g, k, v)
-            session.add(g)
-        return g
+        return get_or_create(Gametype, session, **gametype)[0]
 
 
 class HandInternal(object):
@@ -103,23 +91,17 @@ class HandInternal(object):
         self.calcStreetXRaises(hand) # Empty function currently
 
         self.attachHandPlayers(hand)
-        self.attachActions(hand)
+        #FIXME: write actions and uncomment line below
+        #self.attachActions(hand)
 
         sorted_actions = [ (street, hand.actions[street]) for street in hand.actionStreets ]
         HandPlayer.applyImportedActions(self.handplayers_name_cache, sorted_actions, hand.collectees )
 
     def parseImportedHandStep2(self, session):
-        """Fetching ids for gametypes and players. No flush """
-        self.gametype = Gametype.get_or_create(session, self.siteId, self.gametype_dict)
+        """Fetching ids for gametypes and players"""
+        self.gametypeId = Gametype.get_or_create(session, self.siteId, self.gametype_dict).id
         for hp in self.handPlayers:
-            hp.player = Player.get_or_create(session, self.siteId, hp.name)
-            for action in hp.actions:
-                session.add(action)
-        session.add(self)
-
-    def parseImportedHandStep3(self, session):
-        """Flushes the session"""
-        session.flush()
+            hp.playerId = Player.get_or_create(session, self.siteId, hp.name).id
 
     def getPlayerByName(self, name):
         for hp in self.handPlayers:
@@ -324,7 +306,19 @@ class HandPlayer(object):
             but sorted by street according to Hand.actionStreets
         collectees  - dict : (players (names) collected money, amount)
             """
-        winners = collectees .keys()         
+
+        # FIXME: vvvvv REMOVE CODE BELOW. IT'S NEEDED JUST TO AVOID NOT NULL DB ERRORS
+        for k in handplayers.iterkeys():
+            hp = handplayers[k]
+            hp.card1 = 0
+            hp.card2 = 0
+            hp.winnings = 0
+            hp.rake = 0
+            hp.tourneysPlayersId = 0
+            hp.tourneyTypeId = 0
+        # ^^^^^^^^
+
+        winners = collectees.keys()         
         for i, t in enumerate(sorted_actions):
             street, actions = t
             ss = defaultdict(lambda: {}, {}) # street stats: dict of stats for each player
@@ -348,20 +342,20 @@ class HandPlayer(object):
 
 mapper (HandAction, hands_actions_table, properties={})
 mapper (HandPlayer, hands_players_table, properties={
-    'actions': relation(HandAction, backref='handPlayer', cascade='all, delete-orphan'),
+    'actions': relation(HandAction, backref='handPlayer'),
 })
 mapper (HandInternal, hands_table, properties={
-    'handPlayers': relation(HandPlayer, backref='hand', cascade='all, delete-orphan'),
+    'handPlayers': relation(HandPlayer, backref='hand'),
 })
 mapper (Player, players_table, properties={
-    'playerHands': relation(HandPlayer, backref='player', cascade='all'),
+    'playerHands': relation(HandPlayer, backref='player'),
 })
 mapper (Gametype, gametypes_table, properties={
-    'hands': relation(HandInternal, backref='gametype', cascade='all'),
+    'hands': relation(HandInternal, backref='gametype'),
 })
 mapper (Site, sites_table, properties={
-    'players': relation(Player, backref = 'site', cascade = 'all'),
-    'gametypes': relation(Gametype, backref = 'site', cascade = 'all'),
+    'players': relation(Player, backref = 'site'),
+    'gametypes': relation(Gametype, backref = 'site'),
 })
 
 

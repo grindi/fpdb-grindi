@@ -24,7 +24,7 @@ from time import time, strftime
 from Exceptions import *
 
 from sqlalchemy import pool, create_engine
-from sqlalchemy.orm import create_session
+from sqlalchemy.orm import sessionmaker
 
 
 try:
@@ -151,7 +151,8 @@ class fpdb_db:
         db_urls = {fpdb_db.MYSQL_INNODB: 'mysql://', fpdb_db.PGSQL: 'postgresql://', fpdb_db.SQLITE: 'sqlite://'}
         self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=True)
         #self.engine = create_engine('sqlite:///:memory:', echo=True)
-        self.session = create_session(bind = self.engine)
+        self.Session = sessionmaker(bind = self.engine)
+        self.session = self.Session() # <-- this is 'default' session. i'm not sure we need it //grindi
 
         self.cursor = self.db.cursor()
         # Set up query dictionary as early in the connection process as we can.

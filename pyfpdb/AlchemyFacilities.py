@@ -2,6 +2,8 @@
 from decimal import Decimal
 
 from sqlalchemy import types
+from sqlalchemy.orm.exc import NoResultFound 
+from sqlalchemy.exc import IntegrityError
 
 import Card
 
@@ -64,5 +66,31 @@ class MoneyColumn(types.TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return Decimal(value)/100
+
+class MappedBase(object):
+    """Provide dummy contrcutor"""
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.iteritems():
+            setattr(self, k, v)
+
+def get_or_create(klass, session, **kwargs):
+    """ 
+    Looks up an object with the given kwargs, creating one if necessary.
+    Returns a tuple of (object, created), where created is a boolean
+    specifying whether an object was created.
+    """
+    assert kwargs, \
+            'get_or_create() must be passed at least one keyword argument'
+    try:
+        return session.query(klass).filter_by(**kwargs).one(), False
+    except NoResultFound:
+        try:
+            obj = klass(**kwargs)
+            session.add(obj)
+            session.flush()
+            return obj, True
+        except IntegrityError:
+            return session.query(klass).filter_by(**kwargs).one(), False
 
 
