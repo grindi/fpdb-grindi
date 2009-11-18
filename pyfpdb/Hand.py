@@ -187,21 +187,21 @@ class Hand(object):
 
         self.holecards[street][player] = [open, closed]
 
-    def prepInsert(self, db=None):
+    def prepInsert(self, db):
+        """Stats calculation and gametype detection/creation are here"""
         log.debug("Hand.prepInsert")
         self.internal.parseImportedHandStep1(self)
+        s = db.get_session(autocommit=True)
+        self.internal.parseImportedHandStep2(s)
+        s.close()
 
     def insert(self, db):
-        """Function to insert Hand into database
-
-        Should not commit, and do minimal selects. Callers may want to cache commits
-        db: a connected fpdb_db object
-        """
+        """Function to insert Hand into database """
         log.debug("Hand.insert")
         session = db.session
-        self.internal.parseImportedHandStep2(session)
-        # FIXME: line below commits. \\grindi
-        self.internal.parseImportedHandStep3(session)
+        session.add(self.internal)
+        session.flush()
+        session.commit()
 
     @staticmethod
     def select(db, handId):

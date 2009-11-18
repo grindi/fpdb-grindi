@@ -99,7 +99,7 @@ class Importer:
         for i in xrange(self.settings['threads']):
             self.writerdbs.append( Database.Database(self.config, sql = self.sql) )
 
-        self.NEWIMPORT = False
+        self.NEWIMPORT = True
 
     #Set functions
     def setCallHud(self, value):
@@ -422,7 +422,7 @@ class Importer:
                 self.pos_in_file[file] = hhc.getLastCharacterRead()
 
                 for hand in handlist:
-                    hand.prepInsert()
+                    hand.prepInsert(self.database)
                     hand.insert(self.database)
             else:
                 # conversion didn't work

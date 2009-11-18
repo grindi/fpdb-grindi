@@ -398,7 +398,7 @@ def sss():
     self.settings.update(self.config.get_import_parameters())
     self.settings.update(self.config.get_default_paths())
 
-    self.sql = SQL.Sql(type = self.settings['db-type'], db_server = self.settings['db-server'])
+    self.sql = SQL.Sql( db_server = self.settings['db-server'])
     self.db = Database.Database(self.config, sql = self.sql)
 
     return self.config, self.sql, self.db
