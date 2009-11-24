@@ -98,7 +98,7 @@ class HandInternal(object):
         #self.attachActions(hand)
 
         sorted_actions = [ (street, hand.actions[street]) for street in hand.actionStreets ]
-        HandPlayer.applyImportedActions(self.handplayers_name_cache, sorted_actions, hand.collectees )
+        HandPlayer.applyImportedActions(self.handplayers_name_cache, sorted_actions, hand.collectees, hand.pot )
 
     def parseImportedHandStep2(self, session):
         """Fetching ids for gametypes and players"""
@@ -247,7 +247,6 @@ class HandPlayer(object):
     """Class reflecting HandsPlayers db table"""
     def __init__(self, hand, importedHand, seat, name, chips):
         self.hand = hand # this string automagically appends self to hand.handPlayers
-        #print "DEBUG: self.hand: %s" % self.hand
         self.seatNo = seat
         self.startCash = chips
         # db tbl doesn't have this field. But we need it to fetch Player later
@@ -302,7 +301,7 @@ class HandPlayer(object):
         return amap
 
     @staticmethod
-    def applyImportedActions(handplayers, sorted_actions, collectees):
+    def applyImportedActions(handplayers, sorted_actions, collectees, pot):
         """Applies actions from imported hand to HandPlayer object
         
         handplayers - dict(<player_name>: <HandPlayer object>
@@ -319,6 +318,13 @@ class HandPlayer(object):
             hp.card2 = 0
             hp.winnings = 0
             hp.rake = 0
+            #if k in collectees:
+                #FIXME: This is pretty dodgy, rake = hand.rake/#collectees
+                # You can really only pay rake when you collect money, but
+                # different sites calculate rake differently.
+                # Should be fine for split-pots, but won't be accurate for multi-way pots
+                #hp.rake = int(100* hand.rake)/len(hand.collectees)
+                #hp.totalProfit = hp.winnings - pot.committed[k]
         # ^^^^^^^^
 
         winners = collectees.keys()         
@@ -338,16 +344,6 @@ class HandPlayer(object):
             for p, stats in ss.iteritems():
                 for k, v in stats.iteritems():
                     setattr(handplayers[p], k % i, v)
-
-         #for player in hand.collectees:
-            #FIXME: This is pretty dodgy, rake = hand.rake/#collectees
-            # You can really only pay rake when you collect money, but
-            # different sites calculate rake differently.
-            # Should be fine for split-pots, but won't be accurate for multi-way pots
-         #   self.handsplayers[player]['rake'] = int(100* hand.rake)/len(hand.collectees)
-
-         #for player in hand.pot.committed:
-         #   self.handsplayers[player]['totalProfit'] = int(self.handsplayers[player]['winnings'] - (100*hand.pot.committed[player]))
 
     def fetchIds(self, session):
         pass
