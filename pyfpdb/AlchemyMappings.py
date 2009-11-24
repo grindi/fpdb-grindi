@@ -319,8 +319,6 @@ class HandPlayer(object):
             hp.card2 = 0
             hp.winnings = 0
             hp.rake = 0
-            hp.tourneysPlayersId = 0
-            hp.tourneyTypeId = 0
         # ^^^^^^^^
 
         winners = collectees.keys()         

@@ -3,7 +3,7 @@
 Contains all sqlalchemy tables
 """
 
-from sqlalchemy import Table, Float, Column, Integer, String, MetaData, ForeignKey, Boolean, SmallInteger, DateTime, Text, Index
+from sqlalchemy import Table, Float, Column, Integer, String, MetaData, ForeignKey, Boolean, SmallInteger, DateTime, Text, Index, CHAR
 
 from AlchemyFacilities import CardColumn, MoneyColumn
 
@@ -68,7 +68,7 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('handId',            Integer, ForeignKey("Hands.id"), nullable=False),
     Column('playerId',          Integer, ForeignKey("Players.id"), nullable=False),
     Column('startCash',         MoneyColumn),
-    Column('position',          String(1)), #CHAR(1)
+    Column('position',          CHAR(1)), #CHAR(1)
     Column('seatNo',            SmallInteger, nullable=False), #SMALLINT NOT NULL
         
     Column('card1',             SmallInteger, nullable=False), #smallint NOT NULL,
@@ -86,10 +86,8 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('totalProfit',       Integer), #INT
     Column('comment',           Text), #text
     Column('commentTs',         DateTime), #DATETIME
-    Column('tourneysPlayersId', Integer,), #BIGINT UNSIGNED
-    Column('tourneyTypeId',     Integer,), #SMALLINT UNSIGNED
-    Column('tourneysPlayersId', Integer, ForeignKey("TourneyTypes.id"),), #BIGINT UNSIGNED
-    Column('tourneyTypeId',     Integer, ForeignKey("TourneysPlayers.id"),), #SMALLINT UNSIGNED
+    Column('tourneysPlayersId', Integer, ForeignKey("TourneysPlayers.id"),), #BIGINT UNSIGNED
+    Column('tourneyTypeId',     Integer, ForeignKey("TourneyTypes.id"),), #SMALLINT UNSIGNED
 
     Column('wonWhenSeenStreet1',Float), #FLOAT
     Column('wonWhenSeenStreet2',Float), #FLOAT
@@ -205,8 +203,8 @@ gametypes_table = Table('Gametypes', metadata,
     Column('type',          String(4), nullable=False), # char(4) NOT NULL
     Column('base',          String(4), nullable=False), # char(4) NOT NULL
     Column('category',      String(9), nullable=False), # varchar(9) NOT NULL
-    Column('limitType',     String(2), nullable=False), # char(2) NOT NULL
-    Column('hiLo',          String(1), nullable=False), # char(1) NOT NULL
+    Column('limitType',     CHAR(2), nullable=False), # char(2) NOT NULL
+    Column('hiLo',          CHAR(1), nullable=False), # char(1) NOT NULL
     Column('smallBlind',    Integer(3)), # int
     Column('bigBlind',      Integer(3)), # int
     Column('smallBet',      Integer(3), nullable=False), # int NOT NULL
@@ -219,10 +217,9 @@ hud_cache_table = Table('HudCache', metadata,
     Column('gametypeId',    SmallInteger, ForeignKey("Gametypes.id"), nullable=False), # SMALLINT 
     Column('playerId',      SmallInteger, ForeignKey("Players.id"), nullable=False), # SMALLINT 
     Column('activeSeats',   SmallInteger, nullable=False), # SMALLINT NOT NULL
-    Column('position',      String(1)), # CHAR(1)
-    Column('tourneyTypeId', SmallInteger,  nullable=False), # SMALLINT 
-#        Column('tourneyTypeId', SmallInteger, ForeignKey("TourneyTypes.id"), nullable=False), # SMALLINT 
-    Column('styleKey',      String(7), nullable=False), # CHAR(7) NOT NULL
+    Column('position',      CHAR(1)), # CHAR(1)
+    Column('tourneyTypeId', Integer, ForeignKey("TourneyTypes.id") ), # SMALLINT 
+    Column('styleKey',      CHAR(7), nullable=False), # CHAR(7) NOT NULL
     Column('HDs',           Integer, nullable=False), # INT NOT NULL
 
     Column('wonWhenSeenStreet1',    Float), # FLOAT
