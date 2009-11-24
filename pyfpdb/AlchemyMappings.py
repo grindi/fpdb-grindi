@@ -247,6 +247,7 @@ class HandPlayer(object):
     """Class reflecting HandsPlayers db table"""
     def __init__(self, hand, importedHand, seat, name, chips):
         self.hand = hand # this string automagically appends self to hand.handPlayers
+        #print "DEBUG: self.hand: %s" % self.hand
         self.seatNo = seat
         self.startCash = chips
         # db tbl doesn't have this field. But we need it to fetch Player later
@@ -339,6 +340,16 @@ class HandPlayer(object):
             for p, stats in ss.iteritems():
                 for k, v in stats.iteritems():
                     setattr(handplayers[p], k % i, v)
+
+         #for player in hand.collectees:
+            #FIXME: This is pretty dodgy, rake = hand.rake/#collectees
+            # You can really only pay rake when you collect money, but
+            # different sites calculate rake differently.
+            # Should be fine for split-pots, but won't be accurate for multi-way pots
+         #   self.handsplayers[player]['rake'] = int(100* hand.rake)/len(hand.collectees)
+
+         #for player in hand.pot.committed:
+         #   self.handsplayers[player]['totalProfit'] = int(self.handsplayers[player]['winnings'] - (100*hand.pot.committed[player]))
 
     def fetchIds(self, session):
         pass
