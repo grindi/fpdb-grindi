@@ -462,7 +462,7 @@ class Sql:
                         comment text,
                         commentTs DATETIME,
                         tourneysPlayersId BIGINT UNSIGNED,
-                        tourneyTypeId SMALLINT UNSIGNED NOT NULL DEFAULT 1, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
+                        tourneyTypeId SMALLINT UNSIGNED NULL DEFAULT NULL, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
 
                         wonWhenSeenStreet1 FLOAT,
                         wonWhenSeenStreet2 FLOAT,
@@ -580,7 +580,7 @@ class Sql:
                         comment text,
                         commentTs timestamp without time zone,
                         tourneysPlayersId BIGINT,
-                        tourneyTypeId INT NOT NULL DEFAULT 1, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
+                        tourneyTypeId INT NULL DEFAULT NULL, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
 
                         wonWhenSeenStreet1 FLOAT,
                         wonWhenSeenStreet2 FLOAT,
@@ -697,7 +697,7 @@ class Sql:
                         comment TEXT,
                         commentTs REAL,
                         tourneysPlayersId INT,
-                        tourneyTypeId INT NOT NULL DEFAULT 1,
+                        tourneyTypeId INT NULL DEFAULT NULL,
 
                         wonWhenSeenStreet1 REAL,
                         wonWhenSeenStreet2 REAL,
@@ -892,7 +892,7 @@ class Sql:
                         playerId INT UNSIGNED NOT NULL, FOREIGN KEY (playerId) REFERENCES Players(id),
                         activeSeats SMALLINT NOT NULL,
                         position CHAR(1),
-                        tourneyTypeId SMALLINT UNSIGNED NOT NULL DEFAULT 1, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
+                        tourneyTypeId SMALLINT UNSIGNED NULL DEFAULT NULL, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
                         styleKey CHAR(7) NOT NULL,  /* 1st char is style (A/T/H/S), other 6 are the key */
                         HDs INT NOT NULL,
 
@@ -993,7 +993,7 @@ class Sql:
                         playerId INT, FOREIGN KEY (playerId) REFERENCES Players(id),
                         activeSeats SMALLINT,
                         position CHAR(1),
-                        tourneyTypeId INT DEFAULT 1, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
+                        tourneyTypeId INT NULL DEFAULT NULL, FOREIGN KEY (tourneyTypeId) REFERENCES TourneyTypes(id),
                         styleKey CHAR(7) NOT NULL,  /* 1st char is style (A/T/H/S), other 6 are the key */
                         HDs INT,
 
@@ -1092,7 +1092,7 @@ class Sql:
                         playerId INT,
                         activeSeats INT,
                         position TEXT,
-                        tourneyTypeId INT DEFAULT 1,
+                        tourneyTypeId INT NULL DEFAULT NULL,
                         styleKey TEXT NOT NULL,  /* 1st char is style (A/T/H/S), other 6 are the key */
                         HDs INT,
 
@@ -2943,8 +2943,6 @@ class Sql:
                         ,hp.tourneyTypeId
                         ,date_format(h.handStart, 'd%y%m%d')
 """
-#>>>>>>> 28ca49d592c8e706ad6ee58dd26655bcc33fc5fb:pyfpdb/SQL.py
-#"""
         elif db_server == 'postgresql':
             self.query['rebuildHudCache'] = """
                 INSERT INTO HudCache
