@@ -65,6 +65,9 @@ class HandInternal(object):
         from datetime import datetime
 
         hand.players = hand.getAlivePlayers() # FIXME: do we really want to do it? //grindi
+                                                  #  Yes! - in tourneys, they get dealt cards. 
+                                                  # In ring they do not, but are often listed still in the hh
+                                                  # Carl G
 
         self.tableName  = hand.tablename
         self.siteHandNo = hand.handid
@@ -96,7 +99,7 @@ class HandInternal(object):
         #self.attachActions(hand)
 
         sorted_actions = [ (street, hand.actions[street]) for street in hand.actionStreets ]
-        HandPlayer.applyImportedActions(self.handplayers_name_cache, sorted_actions, hand.collectees )
+        HandPlayer.applyImportedActions(self.handplayers_name_cache, sorted_actions, hand.collectees, hand.pot )
 
     def parseImportedHandStep2(self, session):
         """Fetching ids for gametypes and players"""
@@ -234,6 +237,7 @@ class HandAction(object):
         self.action = action
         # FIXME: add support for 'discards'. I have no idea \
         # how to put discarded cards here \\grindi
+            # The schema for draw games hasn't been decided - ignoring it is correct \\ Carl G
         if action in ('folds', 'checks', 'stands pat'):
             pass
         elif action in ('bets', 'calls', 'bringin'):
@@ -306,7 +310,7 @@ class HandPlayer(object):
         return amap
 
     @staticmethod
-    def applyImportedActions(handplayers, sorted_actions, collectees):
+    def applyImportedActions(handplayers, sorted_actions, collectees, pot):
         """Applies actions from imported hand to HandPlayer object
         
         handplayers - dict(<player_name>: <HandPlayer object>
@@ -323,6 +327,13 @@ class HandPlayer(object):
             hp.card2 = 0
             hp.winnings = 0
             hp.rake = 0
+            #if k in collectees:
+                #FIXME: This is pretty dodgy, rake = hand.rake/#collectees
+                # You can really only pay rake when you collect money, but
+                # different sites calculate rake differently.
+                # Should be fine for split-pots, but won't be accurate for multi-way pots
+                #hp.rake = int(100* hand.rake)/len(hand.collectees)
+                #hp.totalProfit = hp.winnings - pot.committed[k]
         # ^^^^^^^^
 
         winners = collectees.keys()         
