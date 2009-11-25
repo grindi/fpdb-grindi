@@ -41,6 +41,7 @@ import Database
 import fpdb_parse_logic
 import Configuration
 import Exceptions
+from AlchemyMappings import DuplicateHandError
 
 log = Configuration.get_logger("logging.conf", "importer")
 
@@ -417,13 +418,45 @@ class Importer:
             if hhc.getStatus() and self.NEWIMPORT == False:
                 (stored, duplicates, partial, errors, ttime) = self.import_fpdb_file(db, out_path, site, q)
             elif hhc.getStatus() and self.NEWIMPORT == True:
-                #This code doesn't do anything yet
+                time_internal = time()
                 handlist = hhc.getProcessedHands()
                 self.pos_in_file[file] = hhc.getLastCharacterRead()
+                time_internal = time() - time_internal
 
+                (stored, duplicates, partial, errors, ttime) = [0]*5
+                
+                times = []
                 for hand in handlist:
-                    hand.prepInsert(self.database)
-                    hand.insert(self.database)
+                    if hand is None:
+                        errors += 1 
+                        continue
+                    try:
+                        t1 = time()
+                        hand.prepInsert(self.database)
+                        t2 = time()
+                        db.session.add(hand.internal)
+                        t3 = time()
+                        times.append((t2-t1, t3-t2))
+                    except DuplicateHandError: 
+                        duplicates += 1
+                    else:
+                        stored += 1
+                ttimes = reduce( lambda x,y: (x[0]+y[0], x[1]+y[1]), times, (0.,0.))
+                ttime = sum(ttimes)
+
+
+                print "gonna sleeep"
+                sleep(2)
+
+                flush_time = time()
+                db.session.flush()
+                flush_time = time() - flush_time
+                ttime += flush_time + time_internal
+
+                print 'fpdb_import internal time:', time_internal
+                print 'hand prepInsert time:', ttimes[0]
+                print 'hand insert:', ttimes[1]
+                print 'flush time:', ttime
             else:
                 # conversion didn't work
                 # TODO: appropriate response?

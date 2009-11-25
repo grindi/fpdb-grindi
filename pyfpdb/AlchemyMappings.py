@@ -22,7 +22,6 @@ class Player(MappedBase):
 
     @staticmethod
     def get_or_create(session, siteId, name):
-        print '#'*30, 'Player.get_or_create' 
         return get_or_create(Player, session, siteId=siteId, name=name)[0]
 
     def __str__(self):
@@ -54,9 +53,11 @@ class Gametype(MappedBase):
         gametype['siteId'] = siteId
         return get_or_create(Gametype, session, **gametype)[0]
 
+class DuplicateHandError(Exception): pass
 
 class HandInternal(object):
     """Class reflecting Hands db table"""
+
 
     def parseImportedHandStep1(self, hand):
         """Extracts values to insert into from hand returned by HHC. No db is needed he"""
@@ -129,6 +130,14 @@ class HandInternal(object):
                 a = HandAction()
                 a.initFromImportedHand(action, actionNo=i, street=street, handPlayer=p)
                 p.actions.append(a)
+
+    def isDuplicate(self, session):
+        """Checks if current hand already exists in db
+        
+        siteHandNo ans gameTypeId have to be setted
+        """
+        return session.query(HandInternal).filter_by(
+                siteHandNo=self.siteHandNo, gametypeId=self.gametypeId).count()!=0
 
     @staticmethod
     def pfba(actions, f=None, l=None):

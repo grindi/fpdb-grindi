@@ -193,6 +193,9 @@ class Hand(object):
         self.internal.parseImportedHandStep1(self)
         s = db.get_session(autocommit=True)
         self.internal.parseImportedHandStep2(s)
+        if self.internal.isDuplicate(s):
+            s.close()
+            raise DuplicateHandError()
         s.close()
 
     def insert(self, db):
