@@ -71,8 +71,8 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('position',          CHAR(1)), #CHAR(1)
     Column('seatNo',            SmallInteger, nullable=False), #SMALLINT NOT NULL
         
-    Column('card1',             SmallInteger, nullable=False), #smallint NOT NULL,
-    Column('card2',             SmallInteger, nullable=False), #smallint NOT NULL
+    Column('card1',             SmallInteger), #smallint NOT NULL,
+    Column('card2',             SmallInteger), #smallint NOT NULL
     Column('card3',             SmallInteger), #smallint
     Column('card4',             SmallInteger), #smallint
     Column('card5',             SmallInteger), #smallint
@@ -81,8 +81,8 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('startCards',        SmallInteger), #smallint
         
     Column('ante',              Integer), #INT
-    Column('winnings',          MoneyColumn, nullable=False), #int NOT NULL
-    Column('rake',              MoneyColumn, nullable=False), #int NOT NULL
+    Column('winnings',          MoneyColumn, nullable=False, default=0), #int NOT NULL
+    Column('rake',              MoneyColumn, nullable=False, default=0), #int NOT NULL
     Column('totalProfit',       MoneyColumn), #INT
     Column('comment',           Text), #text
     Column('commentTs',         DateTime), #DATETIME

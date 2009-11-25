@@ -446,8 +446,8 @@ class Sql:
                         position CHAR(1),
                         seatNo SMALLINT NOT NULL,
                     
-                        card1 smallint NOT NULL,  /* 0=none, 1-13=2-Ah 14-26=2-Ad 27-39=2-Ac 40-52=2-As */
-                        card2 smallint NOT NULL,
+                        card1 smallint,  /* 0=none, 1-13=2-Ah 14-26=2-Ad 27-39=2-Ac 40-52=2-As */
+                        card2 smallint,
                         card3 smallint,
                         card4 smallint,
                         card5 smallint,
@@ -456,8 +456,8 @@ class Sql:
                         startCards smallint,
                     
                         ante INT,
-                        winnings int NOT NULL,
-                        rake int NOT NULL,
+                        winnings int NOT NULL DEFAULT 0,
+                        rake int NOT NULL DEFAULT 0,
                         totalProfit INT,
                         comment text,
                         commentTs DATETIME,
@@ -564,8 +564,8 @@ class Sql:
                         position CHAR(1),
                         seatNo SMALLINT NOT NULL,
 
-                        card1 smallint NOT NULL,  /* 0=none, 1-13=2-Ah 14-26=2-Ad 27-39=2-Ac 40-52=2-As */
-                        card2 smallint NOT NULL,
+                        card1 smallint,  /* 0=none, 1-13=2-Ah 14-26=2-Ad 27-39=2-Ac 40-52=2-As */
+                        card2 smallint,
                         card3 smallint,
                         card4 smallint,
                         card5 smallint,
@@ -574,8 +574,8 @@ class Sql:
                         startCards smallint,
 
                         ante INT,
-                        winnings int NOT NULL,
-                        rake int NOT NULL,
+                        winnings int NOT NULL DEFAULT 0,
+                        rake int NOT NULL DEFAULT 0,
                         totalProfit INT,
                         comment text,
                         commentTs timestamp without time zone,
@@ -681,8 +681,8 @@ class Sql:
                         position TEXT,
                         seatNo INT NOT NULL,
                     
-                        card1 INT NOT NULL,  /* 0=none, 1-13=2-Ah 14-26=2-Ad 27-39=2-Ac 40-52=2-As */
-                        card2 INT NOT NULL,
+                        card1 INT,  /* 0=none, 1-13=2-Ah 14-26=2-Ad 27-39=2-Ac 40-52=2-As */
+                        card2 INT,
                         card3 INT,
                         card4 INT,
                         card5 INT,
@@ -691,8 +691,8 @@ class Sql:
                         startCards INT,
                     
                         ante INT,
-                        winnings INT NOT NULL,
-                        rake INT NOT NULL,
+                        winnings INT NOT NULL DEFAULT 0,
+                        rake INT NOT NULL DEFAULT 0,
                         totalProfit INT,
                         comment TEXT,
                         commentTs REAL,
