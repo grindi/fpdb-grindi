@@ -157,7 +157,7 @@ class fpdb_db:
         # Set up alchemy
         # i'm not sure it's ok to use the same connection here
         db_urls = {fpdb_db.MYSQL_INNODB: 'mysql://', fpdb_db.PGSQL: 'postgresql://', fpdb_db.SQLITE: 'sqlite://'}
-        self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=True)
+        self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=False)
         #self.engine = create_engine('sqlite:///:memory:', echo=True)
         self.Session = sessionmaker(bind = self.engine)
         self.session = self.Session() # <-- this is 'default' session. i'm not sure we need it //grindi

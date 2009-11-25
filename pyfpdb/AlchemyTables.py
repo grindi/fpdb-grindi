@@ -81,9 +81,9 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('startCards',        SmallInteger), #smallint
         
     Column('ante',              Integer), #INT
-    Column('winnings',          Integer, nullable=False), #int NOT NULL
-    Column('rake',              Integer, nullable=False), #int NOT NULL
-    Column('totalProfit',       Integer), #INT
+    Column('winnings',          MoneyColumn, nullable=False), #int NOT NULL
+    Column('rake',              MoneyColumn, nullable=False), #int NOT NULL
+    Column('totalProfit',       MoneyColumn), #INT
     Column('comment',           Text), #text
     Column('commentTs',         DateTime), #DATETIME
     Column('tourneysPlayersId', Integer, ForeignKey("TourneysPlayers.id"),), #BIGINT UNSIGNED

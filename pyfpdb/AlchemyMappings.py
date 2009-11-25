@@ -6,10 +6,10 @@ This package contains all classes to be mapped and mappers themselves
 import logging
 from sqlalchemy.orm import mapper, relation
 from decimal import Decimal
-from collections import defaultdict
 
 from AlchemyTables import *
 from AlchemyFacilities import get_or_create, MappedBase
+from DerivedStats import DerivedStats
 
 
 class Site(object):
@@ -55,51 +55,23 @@ class Gametype(MappedBase):
 
 class DuplicateHandError(Exception): pass
 
-class HandInternal(object):
+class HandInternal(DerivedStats):
     """Class reflecting Hands db table"""
 
 
     def parseImportedHandStep1(self, hand):
         """Extracts values to insert into from hand returned by HHC. No db is needed he"""
-        from itertools import chain
-        from datetime import datetime
+        hand.players = hand.getAlivePlayers() 
 
-        hand.players = hand.getAlivePlayers() # FIXME: do we really want to do it? //grindi
-                                                  #  Yes! - in tourneys, they get dealt cards. 
-                                                  # In ring they do not, but are often listed still in the hh
-                                                  # Carl G
-
-        self.tableName  = hand.tablename
-        self.siteHandNo = hand.handid
-        self.gametypeId = None # Leave None, handled later after checking db
-        self.handStart  = hand.starttime           
-        self.importTime = datetime.now()
-        self.seats      = hand.counted_seats or len(hand.players) 
-        self.maxSeats   = hand.maxseats
-        self.texture    = None                     # No calculation done for this yet.
-
-        # also save some data for step2. Those fields aren't in Hand table
+        # also save some data for step2. Those fields aren't in Hands table
         self.siteId = hand.siteId 
         self.gametype_dict = hand.gametype 
 
-        # This (i think...) is correct for both stud and flop games, as hand.board['street'] disappears, and
-        # those values remain default in stud.
-        for i, card in enumerate(chain(*[hand.board[s] for s in hand.communityStreets])):
-            setattr(self, 'boardcard%d' % (i+1), card)
-
-        #print "DEBUG: self.getStreetTotals = (%s, %s, %s, %s, %s)" %  hand.getStreetTotals()
-        self.calcStreetPotTotals(hand)
-
-        self.calcVpip(hand) # Gives playersVpi (num of players vpip)
-        self.calcPlayersAtStreetX(hand) # Gives playersAtStreet1..4 and Showdown
-        self.calcStreetXRaises(hand) # Empty function currently
-
         self.attachHandPlayers(hand)
-        #FIXME: write actions and uncomment line below
-        #self.attachActions(hand)
+        #self.attachActions(hand) #FIXME: write actions and uncomment line below
 
-        sorted_actions = [ (street, hand.actions[street]) for street in hand.actionStreets ]
-        HandPlayer.applyImportedActions(self.handplayers_name_cache, sorted_actions, hand.collectees, hand.pot )
+        self.assembleHands(hand)
+        self.assembleHandsPlayers(hand)
 
     def parseImportedHandStep2(self, session):
         """Fetching ids for gametypes and players"""
@@ -115,21 +87,17 @@ class HandInternal(object):
 
     def attachHandPlayers(self, hand):
         """Fills HandInternal.handPlayers list"""
-        self.handplayers_name_cache = {}
+        self.handplayers_by_name = {}
         for seat, name, chips in hand.players:
-            p = HandPlayer(self, hand, seat, name, chips)         
-
-            self.handplayers_name_cache[name] = p
-            #self.handPlayers.append(p) # p already here. see comment in HandPlayer.__init__
-
-            p.name = name     # HandsPlayers table doesn't have this field
-            p.playerId = None # Leave None, handled later during step 2
+            p = HandPlayer(hand = self, imported_hand=hand, seatNo=seat, 
+                           name=name, startCash=chips)         
+            self.handplayers_by_name[name] = p
         
     def attachActions(self, hand):
         """Fills HandPlayers.actions list for each attached player"""
         for street, actions in hand.actions.iteritems():
             for i, action in enumerate(actions):
-                p = self.handplayers_name_cache[action[0]]
+                p = self.handplayers_by_name[action[0]]
                 a = HandAction()
                 a.initFromImportedHand(action, actionNo=i, street=street, handPlayer=p)
                 p.actions.append(a)
@@ -142,76 +110,6 @@ class HandInternal(object):
         return session.query(HandInternal).filter_by(
                 siteHandNo=self.siteHandNo, gametypeId=self.gametypeId).count()!=0
 
-    @staticmethod
-    def pfba(actions, f=None, l=None):
-        """Helper method. Returns set of PlayersFilteredByActions
-        
-        f - forbidden actions
-        l - limited to actions
-        """
-        players = set()
-        for action in actions:
-            if l is not None and action[1] not in l: continue
-            if f is not None and action[1] in f: continue
-            players.add(action[0])
-        return players
-
-    def calcVpip(self, hand):
-        vpipers = self.pfba(hand.actions[hand.actionStreets[1]], l=('calls','bets', 'raises'))
-        self.playersVpi = len(vpipers)
-
-    def calcPlayersAtStreetX(self, hand):
-        """ playersAtStreet1 SMALLINT NOT NULL,   /* num of players seeing flop/street4/draw1 */"""
-        # self.actions[street] is a list of all actions in a tuple, contining the player name first
-        # [ (player, action, ....), (player2, action, ...) ]
-        # The number of unique players in the list per street gives the value for playersAtStreetXXX
-
-        for i in range(4): setattr(self, 'playersAtStreet%d' % (i+1), 0)
-
-        alliners = set()
-        for (i, street) in enumerate(hand.actionStreets[2:]):
-            actors = set()
-            for action in hand.actions[street]:
-                if len(action) > 2 and action[-1]: # allin
-                    alliners.add(action[0])
-                actors.add(action[0])
-            if len(actors)==0 and len(alliners)<2:
-                alliners = set()
-            setattr(self, 'playersAtStreet%d' % (i+1), len(set.union(alliners, actors)))
-
-        actions = hand.actions[hand.actionStreets[-1]]
-        self.playersAtShowdown = len(set.union(self.pfba(actions) - self.pfba(actions, l=('folds',)),  alliners))
-
-    def calcStreetPotTotals(self, hand):
-        for i in range(4): setattr(self, 'street%dPot' % (i+1), 0)
-
-        for (i, street) in enumerate(hand.actionStreets[2:]):
-            setattr(self, 'street%dPot' % (i+1), hand.pot.getTotalAtStreet(street))
-
-        # FIXME: it's not showdown pot. it's pot for last street minus returned bets //grindi
-        self.showdownPot = hand.pot.total
-
-    def calcStreetXRaises(self, hand):
-        # self.actions[street] is a list of all actions in a tuple, contining the action as the second element
-        # [ (player, action, ....), (player2, action, ...) ]
-        for i in range(5): setattr(self, 'street%dRaises' % i, 0)
-
-        for (i, street) in enumerate(hand.actionStreets[1:]): 
-            setattr(self, 'street%dRaises' % i, 
-                    len(filter( lambda action: action[1] in ('raises','bets'), hand.actions[street])))
-
-    def aggr(self, hand, i):
-        aggrers = set()
-        for act in hand.actions[hand.actionStreets[i]]:
-            if act[1] in ('completes', 'raises'):
-                aggrers.add(act[0])
-
-        for player in hand.players:
-            if player[1] in aggrers:
-                self.handsplayers[player[1]]['street%sAggr' % i] = True
-            else:
-                self.handsplayers[player[1]]['street%sAggr' % i] = False
-
     def __str__(self):
         s = list()
         for i in self._sa_class_manager.mapper.c:
@@ -221,9 +119,6 @@ class HandInternal(object):
         for i,p in enumerate(self.handPlayers):
             s.append('%d. %s' % (i, p.player.name or '???'))
         return '\n'.join(s)
-
-    def assembleHudCache(self, hand):
-        pass
 
 
 class HandAction(object):
@@ -252,16 +147,14 @@ class HandAction(object):
              self.amount, self.allIn = extra
 
 
-class HandPlayer(object):
+class HandPlayer(MappedBase):
     """Class reflecting HandsPlayers db table"""
-    def __init__(self, hand, importedHand, seat, name, chips):
-        self.hand = hand # this string automagically appends self to hand.handPlayers
-        self.seatNo = seat
-        self.startCash = chips
-        # db tbl doesn't have this field. But we need it to fetch Player later
-        self.name = name 
-        self.position = self.getPosition(importedHand, seat)
-    
+    def __init__(self, **kwargs):
+        if 'imported_hand' in kwargs and 'seatNo' in kwargs:
+            imported_hand = kwargs.pop('imported_hand')
+            self.position = self.getPosition(imported_hand, kwargs['seatNo'])
+        super(HandPlayer, self).__init__(**kwargs)
+
     @staticmethod
     def getPosition(hand, seat):
         """Returns position value like 'B', 'S', 0, 1, ...
@@ -300,62 +193,7 @@ class HandPlayer(object):
                 return 'B'
             else:
                 return str(seat)
-
-    @staticmethod
-    def getActionMap(actions):
-        """Helper fucntion. Returns dict: <pname: set of actions>"""
-        amap = defaultdict(lambda: set(), {})
-        for action in actions:
-            amap[action[0]].add(action[1])
-        return amap
-
-    @staticmethod
-    def applyImportedActions(handplayers, sorted_actions, collectees, pot):
-        """Applies actions from imported hand to HandPlayer object
-        
-        handplayers - dict(<player_name>: <HandPlayer object>
-        actions     - list tuples (street, actions)
-            like Hand.actions (Hand - is the imported hand, not internal)
-            but sorted by street according to Hand.actionStreets
-        collectees  - dict : (players (names) collected money, amount)
-            """
-
-        # FIXME: vvvvv REMOVE CODE BELOW. IT'S NEEDED JUST TO AVOID NOT NULL DB ERRORS
-        for k in handplayers.iterkeys():
-            hp = handplayers[k]
-            hp.card1 = 0
-            hp.card2 = 0
-            hp.winnings = 0
-            hp.rake = 0
-            #if k in collectees:
-                #FIXME: This is pretty dodgy, rake = hand.rake/#collectees
-                # You can really only pay rake when you collect money, but
-                # different sites calculate rake differently.
-                # Should be fine for split-pots, but won't be accurate for multi-way pots
-                #hp.rake = int(100* hand.rake)/len(hand.collectees)
-                #hp.totalProfit = hp.winnings - pot.committed[k]
-        # ^^^^^^^^
-
-        winners = collectees.keys()         
-        for i, t in enumerate(sorted_actions):
-            street, actions = t
-            ss = defaultdict(lambda: {}, {}) # street stats: dict of stats for each player
-            amap = HandPlayer.getActionMap(actions)
-
-            # lets calculate stats
-            for name, hp in handplayers.iteritems(): # hp stands for hand player
-                # FIXME: wonWhenSeenStreet%s is float so may be ammount won should be stored //grindi
-                ss[name]['wonWhenSeenStreet%s'] =  len( amap[name] ) > 0 and name in winners 
-
-            # FIXME: add other stats here //grindi
-
-            # writing stats
-            for p, stats in ss.iteritems():
-                for k, v in stats.iteritems():
-                    setattr(handplayers[p], k % i, v)
-
-    def fetchIds(self, session):
-        pass
+    
 
 
 mapper (HandAction, hands_actions_table, properties={})
