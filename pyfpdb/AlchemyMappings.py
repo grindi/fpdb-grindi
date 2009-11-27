@@ -241,6 +241,9 @@ class Version(object):
             cls.conn.execute(settings_table.update().values(version=value))
         cls.ver = None
     
+    @classmethod
+    def set_initial(cls):
+        cls.set(cls.CURRENT_VERSION)
 
 
 mapper (Gametype, gametypes_table, properties={

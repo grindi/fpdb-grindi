@@ -1046,7 +1046,7 @@ class Database:
         from AlchemyMappings import Site, Version
         conn = self.fdb.engine 
 
-        Version(conn).set('118')
+        Version(conn).set_initial()
         Site.insert_initial(conn)
 
 
