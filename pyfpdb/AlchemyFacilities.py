@@ -68,10 +68,11 @@ class MoneyColumn(types.TypeDecorator):
         return Decimal(value)/100
 
 
-class BigIntColumn(types.TypeDecorator):
+class BigIntColumn(types.TypeDecorator, types.Integer): 
     """Representing db-independent big integer """
+    # Integer inheritance required for auto_increment flag
 
-    impl = types.INT
+    impl = types.Integer
 
     def load_dialect_impl(self, dialect):
         from sqlalchemy import databases
@@ -79,7 +80,7 @@ class BigIntColumn(types.TypeDecorator):
             return databases.mysql.MSBigInteger()
         elif dialect.name == 'postgres':
             return databases.mysql.PGBigInteger()
-        return self.impl()
+        return types.Integer()
 
 
 class MappedBase(object):
