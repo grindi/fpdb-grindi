@@ -67,12 +67,28 @@ class MoneyColumn(types.TypeDecorator):
     def process_result_value(self, value, dialect):
         return Decimal(value)/100
 
+
+class BigIntColumn(types.TypeDecorator):
+    """Representing db-independent big integer """
+
+    impl = types.INT
+
+    def load_dialect_impl(self, dialect):
+        from sqlalchemy import databases
+        if dialect.name == 'mysql':
+            return databases.mysql.MSBigInteger()
+        elif dialect.name == 'postgres':
+            return databases.mysql.PGBigInteger()
+        return self.impl()
+
+
 class MappedBase(object):
     """Provide dummy contrcutor"""
 
     def __init__(self, **kwargs):
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
+
 
 def get_or_create(klass, session, **kwargs):
     """ 
@@ -92,5 +108,4 @@ def get_or_create(klass, session, **kwargs):
             return obj, True
         except IntegrityError:
             return session.query(klass).filter_by(**kwargs).one(), False
-
 

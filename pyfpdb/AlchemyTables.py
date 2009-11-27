@@ -7,7 +7,7 @@ from sqlalchemy import Table, Float, Column, Integer, String, MetaData, \
         ForeignKey, Boolean, SmallInteger, DateTime, Text, Index, CHAR, \
         PickleType, Unicode
 
-from AlchemyFacilities import CardColumn, MoneyColumn
+from AlchemyFacilities import CardColumn, MoneyColumn, BigIntColumn
 
 
 metadata = MetaData()
@@ -44,9 +44,9 @@ gametypes_table = Table('Gametypes', metadata,
 
 
 hands_table = Table('Hands', metadata,
-    Column('id',            Integer, primary_key=True),
+    Column('id',            BigIntColumn, primary_key=True),
     Column('tableName',     String(30), nullable=False),
-    Column('siteHandNo',    Integer, nullable=False),
+    Column('siteHandNo',    BigIntColumn, nullable=False),
     Column('gametypeId',    SmallInteger, ForeignKey('Gametypes.id'), nullable=False),
     Column('handStart',     DateTime, nullable=False),
     Column('importTime',    DateTime, nullable=False),
@@ -84,8 +84,8 @@ Index('siteHandNo', hands_table.c.siteHandNo, hands_table.c.gametypeId, unique=T
 
 
 hands_actions_table = Table('HandsActions', metadata,
-    Column('id',            Integer, primary_key=True, nullable=False),
-    Column('handPlayerId',  Integer, ForeignKey("HandsPlayers.id"), nullable=False),
+    Column('id',            BigIntColumn, primary_key=True, nullable=False),
+    Column('handPlayerId',  BigIntColumn, ForeignKey("HandsPlayers.id"), nullable=False),
     Column('actionNo',      SmallInteger, nullable=False),
     Column('action',        PickleType, nullable=False),
     mysql_charset='utf8',
@@ -94,8 +94,8 @@ hands_actions_table = Table('HandsActions', metadata,
 
 
 hands_players_table = Table('HandsPlayers', metadata,
-    Column('id',                Integer, primary_key=True),
-    Column('handId',            Integer, ForeignKey("Hands.id"), nullable=False),
+    Column('id',                BigIntColumn, primary_key=True),
+    Column('handId',            BigIntColumn, ForeignKey("Hands.id"), nullable=False),
     Column('playerId',          Integer, ForeignKey("Players.id"), nullable=False),
     Column('startCash',         MoneyColumn),
     Column('position',          CHAR(1)), #CHAR(1)
@@ -116,7 +116,7 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('totalProfit',       MoneyColumn), #INT
     Column('comment',           Text), #text
     Column('commentTs',         DateTime), #DATETIME
-    Column('tourneysPlayersId', Integer, ForeignKey("TourneysPlayers.id"),), #BIGINT UNSIGNED
+    Column('tourneysPlayersId', BigIntColumn, ForeignKey("TourneysPlayers.id"),), #BIGINT UNSIGNED
     Column('tourneyTypeId',     Integer, ForeignKey("TourneyTypes.id"),), #SMALLINT UNSIGNED
 
     Column('wonWhenSeenStreet1',Float), #FLOAT
@@ -213,7 +213,7 @@ hands_players_table = Table('HandsPlayers', metadata,
 
 
 hud_cache_table = Table('HudCache', metadata,
-    Column('id',            Integer, primary_key=True),
+    Column('id',            BigIntColumn, primary_key=True),
     Column('gametypeId',    SmallInteger, ForeignKey("Gametypes.id"), nullable=False), # SMALLINT 
     Column('playerId',      Integer, ForeignKey("Players.id"), nullable=False), # SMALLINT 
     Column('activeSeats',   SmallInteger, nullable=False), # SMALLINT NOT NULL
@@ -346,7 +346,7 @@ sites_table = Table('Sites', metadata,
 tourneys_table = Table('Tourneys', metadata,
     Column('id',            Integer, primary_key=True), 
     Column('tourneyTypeId', Integer, ForeignKey("TourneyTypes.id"), nullable=False, default=1), 
-    Column('siteTourneyNo', Integer, nullable=False), # BIGINT NOT NULL
+    Column('siteTourneyNo', BigIntColumn, nullable=False), # BIGINT NOT NULL
     # FIXME: i think be should allow null here as some sites don't provide entries number
     Column('entries',       Integer, nullable=False), # INT NOT NULL
     Column('prizepool',     Integer, nullable=False), # INT NOT NULL
@@ -395,7 +395,7 @@ Index('tourneyTypes_all',
 
 
 tourneys_players_table = Table('TourneysPlayers', metadata,
-    Column('id',            Integer, primary_key=True), 
+    Column('id',            BigIntColumn, primary_key=True), 
     Column('tourneyId',     Integer, ForeignKey("Tourneys.id"), nullable=False), 
     Column('playerId',      Integer, ForeignKey("Players.id"), nullable=False), 
     Column('payinAmount',   Integer, nullable=False), # INT NOT NULL
