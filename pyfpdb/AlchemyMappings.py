@@ -4,17 +4,14 @@ This package contains all classes to be mapped and mappers themselves
 """
 
 import logging
-from sqlalchemy.orm import mapper, relation
 from decimal import Decimal
+from sqlalchemy.orm import mapper, relation
+from sqlalchemy.sql import select
+
 
 from AlchemyTables import *
 from AlchemyFacilities import get_or_create, MappedBase
 from DerivedStats import DerivedStats
-
-
-class Site(object):
-    """Class reflecting Players db table"""
-    pass
 
 
 class Player(MappedBase):
@@ -53,11 +50,35 @@ class Gametype(MappedBase):
         gametype['siteId'] = siteId
         return get_or_create(Gametype, session, **gametype)[0]
 
-class DuplicateHandError(Exception): pass
+
+class HandAction(object):
+    """Class reflecting HandsActions db table"""
+    def initFromImportedHand(self, action_tuple, actionNo=None, street=None, handPlayer=None):
+        if actionNo is not None: self.actionNo = actionNo
+        if handPlayer is not None: self.handPlayer = handPlayer
+        if street is not None: self.street = street
+        #import pdb; pdb.set_trace()
+        action, extra = action_tuple[1], action_tuple[2:] # we don't need player name 
+        self.action = action
+        # FIXME: add support for 'discards'. I have no idea \
+        # how to put discarded cards here \\grindi
+            # The schema for draw games hasn't been decided - ignoring it is correct \\ Carl G
+        if action in ('folds', 'checks', 'stands pat'):
+            pass
+        elif action in ('bets', 'calls', 'bringin'):
+            self.amount, self.allIn = extra
+        elif action == 'raises':
+            Rb, Rt, C, self.allIn = extra
+            self.amount = Rt 
+        elif action == 'posts':
+            blindtype, self.amount, self.allIn = extra
+            self.action = '%s %s' % (action, blindtype)
+        elif action == 'ante':
+             self.amount, self.allIn = extra
+
 
 class HandInternal(DerivedStats):
     """Class reflecting Hands db table"""
-
 
     def parseImportedHandStep1(self, hand):
         """Extracts values to insert into from hand returned by HHC. No db is needed he"""
@@ -121,32 +142,6 @@ class HandInternal(DerivedStats):
         return '\n'.join(s)
 
 
-class HandAction(object):
-    """Class reflecting HandsActions db table"""
-    def initFromImportedHand(self, action_tuple, actionNo=None, street=None, handPlayer=None):
-        if actionNo is not None: self.actionNo = actionNo
-        if handPlayer is not None: self.handPlayer = handPlayer
-        if street is not None: self.street = street
-        #import pdb; pdb.set_trace()
-        action, extra = action_tuple[1], action_tuple[2:] # we don't need player name 
-        self.action = action
-        # FIXME: add support for 'discards'. I have no idea \
-        # how to put discarded cards here \\grindi
-            # The schema for draw games hasn't been decided - ignoring it is correct \\ Carl G
-        if action in ('folds', 'checks', 'stands pat'):
-            pass
-        elif action in ('bets', 'calls', 'bringin'):
-            self.amount, self.allIn = extra
-        elif action == 'raises':
-            Rb, Rt, C, self.allIn = extra
-            self.amount = Rt 
-        elif action == 'posts':
-            blindtype, self.amount, self.allIn = extra
-            self.action = '%s %s' % (action, blindtype)
-        elif action == 'ante':
-             self.amount, self.allIn = extra
-
-
 class HandPlayer(MappedBase):
     """Class reflecting HandsPlayers db table"""
     def __init__(self, **kwargs):
@@ -193,26 +188,76 @@ class HandPlayer(MappedBase):
                 return 'B'
             else:
                 return str(seat)
+
+
+class Site(object):
+    """Class reflecting Players db table"""
+    INITIAL_DATA = [
+            (1 , 'Full Tilt Poker','USD'),
+            (2 , 'PokerStars',     'USD'),
+            (3 , 'Everleaf',       'USD'),
+            (4 , 'Win2day',        'USD'),
+            (5 , 'OnGame',         'USD'),
+            (6 , 'UltimateBet',    'USD'),
+            (7 , 'Betfair',        'USD'),
+            (8 , 'Absolute',       'USD'),
+            (9 , 'PartyPoker',     'USD'),
+            (10, 'Partouche',      'EUR'),
+        ]
+    INITIAL_DATA_KEYS = ('id', 'name', 'currency')
+
+    INITIAL_DATA_DICTS = [ dict(zip(INITIAL_DATA_KEYS, datum)) for datum in INITIAL_DATA ] 
+
+    @classmethod
+    def insert_initial(cls, connection):
+        connection.execute(sites_table.insert(), cls.INITIAL_DATA_DICTS)
+
+
+class Version(object):
+    """Provides read/write access for version var"""
+    CURRENT_VERSION = 118 # db version for current release
+
+    conn = None 
+    ver  = None
+    def __init__(self, connection=None):
+        if self.__class__.conn is None:
+            self.__class__.conn = connection
+
+    @classmethod
+    def is_wrong(cls):
+        return cls.get() != cls.CURRENT_VERSION
+
+    @classmethod
+    def get(cls):
+        if cls.ver is None:
+           cls.ver = cls.conn.execute(select(['version'], settings_table)).fetchone()[0]
+        return cls.ver
+
+    @classmethod
+    def set(cls, value):
+        if cls.ver is None:
+            cls.conn.execute(settings_table.insert(), version=value)
+        else:
+            cls.conn.execute(settings_table.update().values(version=value))
+        cls.ver = None
     
 
 
-mapper (HandAction, hands_actions_table, properties={})
-mapper (HandPlayer, hands_players_table, properties={
-    'actions': relation(HandAction, backref='handPlayer'),
-})
-mapper (HandInternal, hands_table, properties={
-    'handPlayers': relation(HandPlayer, backref='hand'),
+mapper (Gametype, gametypes_table, properties={
+    'hands': relation(HandInternal, backref='gametype'),
 })
 mapper (Player, players_table, properties={
     'playerHands': relation(HandPlayer, backref='player'),
-})
-mapper (Gametype, gametypes_table, properties={
-    'hands': relation(HandInternal, backref='gametype'),
 })
 mapper (Site, sites_table, properties={
     'players': relation(Player, backref = 'site'),
     'gametypes': relation(Gametype, backref = 'site'),
 })
-
-
+mapper (HandAction, hands_actions_table, properties={})
+mapper (HandInternal, hands_table, properties={
+    'handPlayers': relation(HandPlayer, backref='hand'),
+})
+mapper (HandPlayer, hands_players_table, properties={
+    'actions': relation(HandAction, backref='handPlayer'),
+})
 

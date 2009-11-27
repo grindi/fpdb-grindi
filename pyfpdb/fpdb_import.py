@@ -41,7 +41,6 @@ import Database
 import fpdb_parse_logic
 import Configuration
 import Exceptions
-from AlchemyMappings import DuplicateHandError
 
 log = Configuration.get_logger("logging.conf", "importer")
 
@@ -437,7 +436,7 @@ class Importer:
                         db.session.add(hand.internal)
                         t3 = time()
                         times.append((t2-t1, t3-t2))
-                    except DuplicateHandError: 
+                    except DuplicateError: 
                         duplicates += 1
                     else:
                         stored += 1

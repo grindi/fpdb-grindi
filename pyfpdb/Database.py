@@ -247,7 +247,39 @@ class Database:
         self.host = db_params['db-host']
 
     def get_session(self, **kwargs):
-        """Creates binded alchemy session. Takes Session kwargs"""
+        """Creates binded alchemy session. Takes Session kwargs
+        
+        Most important of them:
+    
+        autocommit
+            Defaults to False. When True, the Session does not keep a persistent 
+            transaction running, and will acquire connections from the engine on 
+            an as-needed basis, returning them immediately after their use. 
+            Flushes will begin and commit (or possibly rollback) their own 
+            transaction if no transaction is present. When using this mode, the 
+            session.begin() method may be used to begin a transaction explicitly.
+
+            Leaving it on its default value of False means that the Session will 
+            acquire a connection and begin a transaction the first time it is 
+            used, which it will maintain persistently until rollback(), commit(), 
+            or close() is called. When the transaction is released by any of 
+            these methods, the Session is ready for the next usage, which will 
+            again acquire and maintain a new connection/transaction.
+
+        autoflush
+            When True, all query operations will issue a flush() call to this 
+            Session before proceeding. This is a convenience feature so that 
+            flush() need not be called repeatedly in order for database queries 
+            to retrieve results. It's typical that autoflush is used in 
+            conjunction with autocommit=False. In this scenario, explicit calls 
+            to flush() are rarely needed; you usually only need to call commit() 
+            (which flushes) to finalize changes.
+
+        expire_on_commit
+            Defaults to True. When True, all instances will be fully expired 
+            after each commit(), so that all attribute/object access subsequent 
+            to a completed transaction will load from the most recent database state.
+        """
         return self.fdb.Session(**kwargs)
 
     def commit(self):
@@ -980,43 +1012,18 @@ class Database:
         """(Re-)creates the tables of the current DB"""
         
         self.drop_tables()
-        self.create_tables()
-        self.createAllIndexes()
+        self.create_tables_and_indexes()
         self.commit()
         log.info("Finished recreating tables")
     #end def recreate_tables
 
-    def create_tables(self):
-        #todo: should detect and fail gracefully if tables already exist.
+    def create_tables_and_indexes(self):
+        from AlchemyTables import metadata
         try:
-            log.debug(self.sql.query['createSettingsTable'])
-            c = self.get_cursor()
-            c.execute(self.sql.query['createSettingsTable'])
-
-            log.debug(self.sql.query['createSitesTable'])
-            c.execute(self.sql.query['createSitesTable'])
-            c.execute(self.sql.query['createGametypesTable'])
-            c.execute(self.sql.query['createPlayersTable'])
-            c.execute(self.sql.query['createAutoratesTable'])
-            c.execute(self.sql.query['createHandsTable'])
-            c.execute(self.sql.query['createTourneyTypesTable'])
-            c.execute(self.sql.query['createTourneysTable'])
-            c.execute(self.sql.query['createTourneysPlayersTable'])
-            c.execute(self.sql.query['createHandsPlayersTable'])
-            c.execute(self.sql.query['createHandsActionsTable'])
-            c.execute(self.sql.query['createHudCacheTable'])
-
-            # create unique indexes:
-            c.execute(self.sql.query['addTourneyIndex'])
-            c.execute(self.sql.query['addHandsIndex'])
-            c.execute(self.sql.query['addPlayersIndex'])
-            c.execute(self.sql.query['addTPlayersIndex'])
-            c.execute(self.sql.query['addTTypesIndex'])
-
+            metadata.create_all(self.fdb.engine)
             self.fillDefaultData()
             self.commit()
         except:
-            #print "Error creating tables: ", str(sys.exc_value)
             err = traceback.extract_tb(sys.exc_info()[2])[-1]
             print "***Error creating tables: "+err[2]+"("+str(err[1])+"): "+str(sys.exc_info()[1])
             self.rollback()
@@ -1025,146 +1032,36 @@ class Database:
     
     def drop_tables(self):
         """Drops the fpdb tables from the current db"""
+        from AlchemyTables import metadata
         try:
-            c = self.get_cursor()
+            metadata.drop_all(self.fdb.engine)
         except:
-            print "*** Error unable to get cursor"
-        else:
-            backend = self.get_backend_name()
-            if backend == 'MySQL InnoDB': # what happens if someone is using MyISAM?
-                try:
-                    self.drop_referential_integrity() # needed to drop tables with foreign keys
-                    c.execute(self.sql.query['list_tables'])
-                    tables = c.fetchall()
-                    for table in tables:
-                        c.execute(self.sql.query['drop_table'] + table[0])
-                except:
-                    err = traceback.extract_tb(sys.exc_info()[2])[-1]
-                    print "***Error dropping tables: "+err[2]+"("+str(err[1])+"): "+str(sys.exc_info()[1])
-                    self.rollback()
-            elif backend == 'PostgreSQL':
-                try:
-                    self.commit()
-                    c.execute(self.sql.query['list_tables'])
-                    tables = c.fetchall()
-                    for table in tables:
-                        c.execute(self.sql.query['drop_table'] + table[0] + ' cascade')
-                except:
-                    err = traceback.extract_tb(sys.exc_info()[2])[-1]
-                    print "***Error dropping tables: "+err[2]+"("+str(err[1])+"): "+str(sys.exc_info()[1])
-                    self.rollback()
-            elif backend == 'SQLite':
-                try:
-                    c.execute(self.sql.query['list_tables'])
-                    for table in c.fetchall():
-                        log.debug(self.sql.query['drop_table'] + table[0])
-                        c.execute(self.sql.query['drop_table'] + table[0])
-                except:
-                    err = traceback.extract_tb(sys.exc_info()[2])[-1]
-                    print "***Error dropping tables: "+err[2]+"("+str(err[1])+"): "+str(sys.exc_info()[1])
-                    self.rollback()
-            try:
-                self.commit()
-            except:
-                print "*** Error in committing table drop"
-                err = traceback.extract_tb(sys.exc_info()[2])[-1]
-                print "***Error dropping tables: "+err[2]+"("+str(err[1])+"): "+str(sys.exc_info()[1])
-                self.rollback()
+            print "*** Error in committing table drop"
+            err = traceback.extract_tb(sys.exc_info()[2])[-1]
+            print "***Error dropping tables: "+err[2]+"("+str(err[1])+"): "+str(sys.exc_info()[1])
+            self.rollback()
     #end def drop_tables
 
-    def createAllIndexes(self):
-        """Create new indexes"""
-
-        try:
-            if self.backend == self.PGSQL:
-                self.connection.set_isolation_level(0)   # allow table/index operations to work
-            for idx in self.indexes[self.backend]:
-                if self.backend == self.MYSQL_INNODB:
-                    print "creating mysql index ", idx['tab'], idx['col']
-                    try:
-                        s = "create index %s on %s(%s)" % (idx['col'],idx['tab'],idx['col'])
-                        self.get_cursor().execute(s)
-                    except:
-                        print "    create idx failed: " + str(sys.exc_info())
-                elif self.backend == self.PGSQL:
-                    # mod to use tab_col for index name?
-                    print "creating pg index ", idx['tab'], idx['col']
-                    try:
-                        s = "create index %s_%s_idx on %s(%s)" % (idx['tab'], idx['col'], idx['tab'], idx['col'])
-                        self.get_cursor().execute(s)
-                    except:
-                        print "    create idx failed: " + str(sys.exc_info())
-                elif self.backend == self.SQLITE:
-                    log.debug("Creating sqlite index %s %s" % (idx['tab'], idx['col']))
-                    try:
-                        s = "create index %s_%s_idx on %s(%s)" % (idx['tab'], idx['col'], idx['tab'], idx['col'])
-                        self.get_cursor().execute(s)
-                    except:
-                        log.debug("Create idx failed: " + str(sys.exc_info()))
-                else:
-                    print "Only MySQL, Postgres and SQLite supported so far"
-                    return -1
-            if self.backend == self.PGSQL:
-                self.connection.set_isolation_level(1)   # go back to normal isolation level
-        except:
-            print "Error creating indexes: " + str(sys.exc_value)
-            raise FpdbError( "Error creating indexes " + str(sys.exc_value) )
-    #end def createAllIndexes
-
-    def dropAllIndexes(self):
-        """Drop all standalone indexes (i.e. not including primary keys or foreign keys)
-           using list of indexes in indexes data structure"""
-        # maybe upgrade to use data dictionary?? (but take care to exclude PK and FK)
-        if self.backend == self.PGSQL:
-            self.connection.set_isolation_level(0)   # allow table/index operations to work
-        for idx in self.indexes[self.backend]:
-            if self.backend == self.MYSQL_INNODB:
-                print "dropping mysql index ", idx['tab'], idx['col']
-                try:
-                    self.get_cursor().execute( "alter table %s drop index %s"
-                                             , (idx['tab'],idx['col']) )
-                except:
-                    pass
-            elif self.backend == self.PGSQL:
-                print "dropping pg index ", idx['tab'], idx['col']
-                # mod to use tab_col for index name?
-                try:
-                    self.get_cursor().execute( "drop index %s_%s_idx"
-                                               % (idx['tab'],idx['col']) )
-                except:
-                    pass
-            else:
-                print "Only MySQL and Postgres supported so far"
-                return -1
-        if self.backend == self.PGSQL:
-            self.connection.set_isolation_level(1)   # go back to normal isolation level
-    #end def dropAllIndexes
-    
     def fillDefaultData(self):
-        c = self.get_cursor() 
-        c.execute("INSERT INTO Settings (version) VALUES (118);")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('Full Tilt Poker', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('PokerStars', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('Everleaf', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('Win2day', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('OnGame', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('UltimateBet', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('Betfair', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('Absolute', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('PartyPoker', 'USD')")
-        c.execute("INSERT INTO Sites (name,currency) VALUES ('Partouche', 'EUR')")
-        if self.backend == self.SQLITE:
-            c.execute("INSERT INTO TourneyTypes (id, siteId, buyin, fee) VALUES (NULL, 1, 0, 0);")
-        elif self.backend == self.PGSQL:
-            c.execute("""insert into TourneyTypes(siteId, buyin, fee, maxSeats, knockout
-                                                 ,rebuyOrAddon, speed, headsUp, shootout, matrix)
-                         values (1, 0, 0, 0, False, False, null, False, False, False);""")
-        elif self.backend == self.MYSQL_INNODB:
-            c.execute("""insert into TourneyTypes(id, siteId, buyin, fee, maxSeats, knockout
-                                                 ,rebuyOrAddon, speed, headsUp, shootout, matrix)
-                         values (DEFAULT, 1, 0, 0, 0, False, False, null, False, False, False);""")
+        from AlchemyMappings import Site, Version
+        conn = self.fdb.engine 
 
-    #end def fillDefaultData
+        Version(conn).set('118')
+        Site.insert_initial(conn)
+
+
+        #c = self.get_cursor() 
+        #if self.backend == self.SQLITE:
+        #    c.execute("INSERT INTO TourneyTypes (id, siteId, buyin, fee) VALUES (NULL, 1, 0, 0);")
+        #elif self.backend == self.PGSQL:
+        #    c.execute("""insert into TourneyTypes(siteId, buyin, fee, maxSeats, knockout
+        #                                         ,rebuyOrAddon, speed, headsUp, shootout, matrix)
+        #                 values (1, 0, 0, 0, False, False, null, False, False, False);""")
+        #elif self.backend == self.MYSQL_INNODB:
+        #    c.execute("""insert into TourneyTypes(id, siteId, buyin, fee, maxSeats, knockout
+        #                                         ,rebuyOrAddon, speed, headsUp, shootout, matrix)
+        #                 values (DEFAULT, 1, 0, 0, 0, False, False, null, False, False, False);""")
+
 
     def rebuild_hudcache(self, start=None):
         """clears hudcache and rebuilds from the individual handsplayers records"""

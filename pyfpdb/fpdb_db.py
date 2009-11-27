@@ -156,23 +156,26 @@ class fpdb_db:
             raise FpdbError("unrecognised database backend:"+backend)
         # Set up alchemy
         # i'm not sure it's ok to use the same connection here
-        db_urls = {fpdb_db.MYSQL_INNODB: 'mysql://', fpdb_db.PGSQL: 'postgresql://', fpdb_db.SQLITE: 'sqlite://'}
+        db_urls = { fpdb_db.MYSQL_INNODB: 'mysql://??charset=utf8', 
+                    fpdb_db.PGSQL: 'postgresql://', 
+                    fpdb_db.SQLITE: 'sqlite://', }
         self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=False)
         #self.engine = create_engine('sqlite:///:memory:', echo=True)
         self.Session = sessionmaker(bind = self.engine)
-        self.session = self.Session() # <-- this is 'default' session. i'm not sure we need it //grindi
+        self.session = self.Session(autocommit=False, autoflush=True) # 'default' session
 
         self.cursor = self.db.cursor()
         # Set up query dictionary as early in the connection process as we can.
         self.sql = FpdbSQLQueries.FpdbSQLQueries(self.get_backend_name())
         self.cursor.execute(self.sql.query['set tx level'])
-        self.wrongDbVersion = False
+
+        from AlchemyMappings import Version
+        Version(self.engine)
+
         try:
-            self.cursor.execute("SELECT * FROM Settings")
-            settings = self.cursor.fetchone()
-            if settings[0] != 118:
+            self.wrongDbVersion = Version.is_wrong()
+            if self.wrongDbVersion:
                 print "outdated or too new database version - please recreate tables"
-                self.wrongDbVersion = True
         except:
             if database !=  ":memory:": print "failed to read settings table - please recreate tables"
             self.wrongDbVersion = True

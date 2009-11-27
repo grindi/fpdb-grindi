@@ -22,3 +22,4 @@ class FpdbMySQLFailedError(FpdbDatabaseError):
 
 class DuplicateError(FpdbError):
     pass
+

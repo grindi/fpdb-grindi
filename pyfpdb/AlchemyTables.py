@@ -3,12 +3,44 @@
 Contains all sqlalchemy tables
 """
 
-from sqlalchemy import Table, Float, Column, Integer, String, MetaData, ForeignKey, Boolean, SmallInteger, DateTime, Text, Index, CHAR
+from sqlalchemy import Table, Float, Column, Integer, String, MetaData, \
+        ForeignKey, Boolean, SmallInteger, DateTime, Text, Index, CHAR, \
+        PickleType, Unicode
 
 from AlchemyFacilities import CardColumn, MoneyColumn
 
 
 metadata = MetaData()
+
+
+autorates_table = Table('Autorates', metadata,
+    Column('id',             Integer, primary_key=True, nullable=False),
+    Column('playerId',       Integer, ForeignKey("Players.id"), nullable=False), 
+    Column('gametypeId',     SmallInteger, ForeignKey("Gametypes.id"), nullable=False), 
+    Column('description',    String(50), nullable=False), 
+    Column('shortDesc',      CHAR(8), nullable=False), 
+    Column('ratingTime',     DateTime, nullable=False), 
+    Column('handCount',      Integer, nullable=False), 
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
+)
+
+
+gametypes_table = Table('Gametypes', metadata,
+    Column('id',            SmallInteger, primary_key=True),
+    Column('siteId',        SmallInteger, ForeignKey("Sites.id"), nullable=False), # SMALLINT
+    Column('type',          String(4), nullable=False), # char(4) NOT NULL
+    Column('base',          String(4), nullable=False), # char(4) NOT NULL
+    Column('category',      String(9), nullable=False), # varchar(9) NOT NULL
+    Column('limitType',     CHAR(2), nullable=False), # char(2) NOT NULL
+    Column('hiLo',          CHAR(1), nullable=False), # char(1) NOT NULL
+    Column('smallBlind',    Integer(3)), # int
+    Column('bigBlind',      Integer(3)), # int
+    Column('smallBet',      Integer(3), nullable=False), # int NOT NULL
+    Column('bigBet',        Integer(3), nullable=False), # int NOT NULL
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
+)
 
 
 hands_table = Table('Hands', metadata,
@@ -45,21 +77,19 @@ hands_table = Table('Hands', metadata,
     Column('showdownPot',   MoneyColumn),
     Column('comment',       Text),
     Column('commentTs',     DateTime),
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 Index('siteHandNo', hands_table.c.siteHandNo, hands_table.c.gametypeId, unique=True)
 
 
 hands_actions_table = Table('HandsActions', metadata,
-    Column('id',            Integer, primary_key=True),
-    Column('handsPlayerId', Integer, ForeignKey("HandsPlayers.id"), nullable=False),
-    Column('street',        SmallInteger, nullable=False),
+    Column('id',            Integer, primary_key=True, nullable=False),
+    Column('handPlayerId',  Integer, ForeignKey("HandsPlayers.id"), nullable=False),
     Column('actionNo',      SmallInteger, nullable=False),
-    # FIXME: change create table to string(20) \\grindi
-    Column('action',        String(20), nullable=False), 
-    Column('allIn',         Boolean, nullable=False),
-    Column('amount',        MoneyColumn, nullable=False),
-    Column('comment',       Text),
-    Column('commentTs',     DateTime),
+    Column('action',        PickleType, nullable=False),
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 
 
@@ -176,46 +206,16 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('street3Raises',              SmallInteger), #TINYINT
     Column('street4Raises',              SmallInteger), #TINYINT
 
-    Column('actionString',               String), #VARCHAR(15)
-)
-
-
-players_table = Table('Players', metadata,
-    Column('id',            Integer, primary_key=True),
-    Column('name',          String(32), nullable=False), # VARCHAR(32) CHARACTER SET utf8 NOT NULL
-    Column('siteId',        SmallInteger, ForeignKey("Sites.id"), nullable=False), # SMALLINT 
-    Column('comment',       Text), # text
-    Column('commentTs',     DateTime), # DATETIME
-)
-Index('name', players_table.c.name, players_table.c.siteId, unique=True)
-
-
-sites_table = Table('Sites', metadata,
-    Column('id',            Integer, primary_key=True),
-    Column('name',          String(32), nullable=False), # varchar(32) NOT NULL
-    Column('currency',      String(3), nullable=False), # char(3) NOT NULL
-)
-
-
-gametypes_table = Table('Gametypes', metadata,
-    Column('id',            Integer, primary_key=True),
-    Column('siteId',        SmallInteger, ForeignKey("Sites.id"), nullable=False), # SMALLINT
-    Column('type',          String(4), nullable=False), # char(4) NOT NULL
-    Column('base',          String(4), nullable=False), # char(4) NOT NULL
-    Column('category',      String(9), nullable=False), # varchar(9) NOT NULL
-    Column('limitType',     CHAR(2), nullable=False), # char(2) NOT NULL
-    Column('hiLo',          CHAR(1), nullable=False), # char(1) NOT NULL
-    Column('smallBlind',    Integer(3)), # int
-    Column('bigBlind',      Integer(3)), # int
-    Column('smallBet',      Integer(3), nullable=False), # int NOT NULL
-    Column('bigBet',        Integer(3), nullable=False), # int NOT NULL
+    Column('actionString',               String(15)), #VARCHAR(15)
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 
 
 hud_cache_table = Table('HudCache', metadata,
     Column('id',            Integer, primary_key=True),
     Column('gametypeId',    SmallInteger, ForeignKey("Gametypes.id"), nullable=False), # SMALLINT 
-    Column('playerId',      SmallInteger, ForeignKey("Players.id"), nullable=False), # SMALLINT 
+    Column('playerId',      Integer, ForeignKey("Players.id"), nullable=False), # SMALLINT 
     Column('activeSeats',   SmallInteger, nullable=False), # SMALLINT NOT NULL
     Column('position',      CHAR(1)), # CHAR(1)
     Column('tourneyTypeId', Integer, ForeignKey("TourneyTypes.id") ), # SMALLINT 
@@ -310,6 +310,36 @@ hud_cache_table = Table('HudCache', metadata,
     Column('street2Raises',         Integer), # INT
     Column('street3Raises',         Integer), # INT
     Column('street4Raises',         Integer), # INT
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
+)
+
+
+players_table = Table('Players', metadata,
+    Column('id',            Integer, primary_key=True),
+    Column('name',          Unicode(32), nullable=False), # VARCHAR(32) CHARACTER SET utf8 NOT NULL
+    Column('siteId',        SmallInteger, ForeignKey("Sites.id"), nullable=False), # SMALLINT 
+    Column('comment',       Text), # text
+    Column('commentTs',     DateTime), # DATETIME
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
+)
+Index('name', players_table.c.name, players_table.c.siteId, unique=True)
+
+
+settings_table = Table('Settings', metadata,
+    Column('version',          SmallInteger, nullable=False), 
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
+)
+
+
+sites_table = Table('Sites', metadata,
+    Column('id',            SmallInteger, primary_key=True),
+    Column('name',          String(32), nullable=False), # varchar(32) NOT NULL
+    Column('currency',      String(3), nullable=False), # char(3) NOT NULL
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 
 
@@ -335,13 +365,15 @@ tourneys_table = Table('Tourneys', metadata,
     Column('koBounty',      Integer, default=0), # INT DEFAULT 0
     Column('comment',       Text), # TEXT
     Column('commentTs',     DateTime), # DATETIME
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 Index('siteTourneyNo', tourneys_table.c.siteTourneyNo, tourneys_table.c.tourneyTypeId, unique=True)
 
 
 tourney_types_table = Table('TourneyTypes', metadata,
     Column('id',            Integer, primary_key=True), 
-    Column('siteId',        Integer, ForeignKey("siteId.id"), nullable=False), 
+    Column('siteId',        SmallInteger, ForeignKey("Sites.id"), nullable=False), 
     Column('buyin',         Integer, nullable=False), # INT NOT NULL
     Column('fee',           Integer, nullable=False), # INT NOT NULL
     Column('maxSeats',      Boolean, nullable=False, default=-1), # INT NOT NULL DEFAULT -1
@@ -352,6 +384,8 @@ tourney_types_table = Table('TourneyTypes', metadata,
     Column('shootout',      Boolean, nullable=False, default=False), # BOOLEAN NOT NULL DEFAULT False
     Column('matrix',        Boolean, nullable=False, default=False), # BOOLEAN NOT NULL DEFAULT False
     Column('sng',           Boolean, nullable=False, default=False), # BOOLEAN NOT NULL DEFAULT False
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 Index('tourneyTypes_all', 
     tourney_types_table.c.buyin, tourney_types_table.c.fee, tourney_types_table.c.maxSeats, 
@@ -362,8 +396,8 @@ Index('tourneyTypes_all',
 
 tourneys_players_table = Table('TourneysPlayers', metadata,
     Column('id',            Integer, primary_key=True), 
-    Column('tourneyId',     Integer, ForeignKey("tourneyId.id"), nullable=False), 
-    Column('playerId',      Integer, ForeignKey("playerId.id"), nullable=False), 
+    Column('tourneyId',     Integer, ForeignKey("Tourneys.id"), nullable=False), 
+    Column('playerId',      Integer, ForeignKey("Players.id"), nullable=False), 
     Column('payinAmount',   Integer, nullable=False), # INT NOT NULL
     Column('rank',          Integer, nullable=False), # INT NOT NULL
     Column('winnings',      Integer, nullable=False), # INT NOT NULL
@@ -372,6 +406,8 @@ tourneys_players_table = Table('TourneysPlayers', metadata,
     Column('nbKO',          Integer, default=0), # INT DEFAULT 0
     Column('comment',       Text), # TEXT
     Column('commentTs',     DateTime), # DATETIME
+    mysql_charset='utf8',
+    mysql_engine='InnoDB',
 )
 Index('tourneyId', tourneys_players_table.c.tourneyId, tourneys_players_table.c.playerId, unique=True)
 

@@ -28,8 +28,6 @@ import traceback
 from decimal import Decimal
 from copy import deepcopy
 
-from sqlalchemy.orm import mapper, relation
-
 from Exceptions import *
 import DerivedStats
 import Card
@@ -44,7 +42,7 @@ class Hand(object):
     LCS = {'H':'h', 'D':'d', 'C':'c', 'S':'s'}
     SYMBOL = {'USD': '$', 'EUR': u'$', 'T$': '', 'play': ''}
     MS = {'horse' : 'HORSE', '8game' : '8-Game', 'hose'  : 'HOSE', 'ha': 'HA'}
-    SITEIDS = {'Fulltilt':1, 'PokerStars':2, 'Everleaf':3, 'Win2day':4, 'OnGame':5, 'UltimateBet':6, 'Betfair':7, 'Absolute':8, 'PartyPoker':9 }
+    SITEIDS =  dict([ (datum['name'], datum['id']) for datum in Site.INITIAL_DATA_DICTS ])
 
     def __init__(self, sitename, gametype, handText, builtFrom="HHC"):
         self.internal = HandInternal()
@@ -195,7 +193,7 @@ class Hand(object):
         self.internal.parseImportedHandStep2(s)
         if self.internal.isDuplicate(s):
             s.close()
-            raise DuplicateHandError()
+            raise DuplicateError()
         s.close()
 
     def insert(self, db):
