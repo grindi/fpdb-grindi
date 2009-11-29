@@ -548,14 +548,14 @@ class Hand(object):
 
 
 class HoldemOmahaHand(Hand):
+    allStreets = ['BLINDSANTES', 'PREFLOP','FLOP','TURN','RIVER']
+    holeStreets = ['PREFLOP']
+    communityStreets = ['FLOP', 'TURN', 'RIVER']
+    actionStreets = ['BLINDSANTES','PREFLOP','FLOP','TURN','RIVER']
     def __init__(self, hhc, sitename, gametype, handText, builtFrom = "HHC", handid=None):
         if gametype['base'] != 'hold':
             pass # or indeed don't pass and complain instead
         log.debug("HoldemOmahaHand")
-        self.allStreets = ['BLINDSANTES', 'PREFLOP','FLOP','TURN','RIVER']
-        self.holeStreets = ['PREFLOP']
-        self.communityStreets = ['FLOP', 'TURN', 'RIVER']
-        self.actionStreets = ['BLINDSANTES','PREFLOP','FLOP','TURN','RIVER']
         Hand.__init__(self, sitename, gametype, handText, builtFrom = "HHC")
         super(HoldemOmahaHand, self).__init__(sitename, gametype, handText, builtFrom = "HHC")
         self.sb = gametype['sb']
@@ -826,14 +826,14 @@ class HoldemOmahaHand(Hand):
         print >>fh, "\n\n"
 
 class DrawHand(Hand):
+    streetList = ['BLINDSANTES', 'DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
+    allStreets = ['BLINDSANTES', 'DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
+    holeStreets = ['DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
+    actionStreets =  ['PREDEAL', 'DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
+    communityStreets = []
     def __init__(self, hhc, sitename, gametype, handText, builtFrom = "HHC"):
         if gametype['base'] != 'draw':
             pass # or indeed don't pass and complain instead
-        self.streetList = ['BLINDSANTES', 'DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
-        self.allStreets = ['BLINDSANTES', 'DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
-        self.holeStreets = ['DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
-        self.actionStreets =  ['PREDEAL', 'DEAL', 'DRAWONE', 'DRAWTWO', 'DRAWTHREE']
-        self.communityStreets = []
         Hand.__init__(self, sitename, gametype, handText)
         self.sb = gametype['sb']
         self.bb = gametype['bb']
@@ -999,16 +999,17 @@ class DrawHand(Hand):
 
 
 class StudHand(Hand):
+    allStreets = ['BLINDSANTES','THIRD','FOURTH','FIFTH','SIXTH','SEVENTH']
+    communityStreets = []
+    actionStreets = ['BLINDSANTES','THIRD','FOURTH','FIFTH','SIXTH','SEVENTH']
+
+    streetList = ['BLINDSANTES','THIRD','FOURTH','FIFTH','SIXTH','SEVENTH'] # a list of the observed street names in order
+    holeStreets = ['THIRD','FOURTH','FIFTH','SIXTH','SEVENTH']
+
     def __init__(self, hhc, sitename, gametype, handText, builtFrom = "HHC"):
         if gametype['base'] != 'stud':
             pass # or indeed don't pass and complain instead
 
-        self.allStreets = ['BLINDSANTES','THIRD','FOURTH','FIFTH','SIXTH','SEVENTH']
-        self.communityStreets = []
-        self.actionStreets = ['BLINDSANTES','THIRD','FOURTH','FIFTH','SIXTH','SEVENTH']
-
-        self.streetList = ['BLINDSANTES','THIRD','FOURTH','FIFTH','SIXTH','SEVENTH'] # a list of the observed street names in order
-        self.holeStreets = ['THIRD','FOURTH','FIFTH','SIXTH','SEVENTH']
         Hand.__init__(self, sitename, gametype, handText)
         self.sb = gametype['sb']
         self.bb = gametype['bb']
