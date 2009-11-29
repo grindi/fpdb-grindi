@@ -436,7 +436,7 @@ class Importer:
                         db.session.add(hand.internal)
                         t3 = time()
                         times.append((t2-t1, t3-t2))
-                    except DuplicateError: 
+                    except Exceptions.DuplicateError: 
                         duplicates += 1
                     else:
                         stored += 1

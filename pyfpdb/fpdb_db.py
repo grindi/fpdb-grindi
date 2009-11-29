@@ -159,7 +159,7 @@ class fpdb_db:
         db_urls = { fpdb_db.MYSQL_INNODB: 'mysql://??charset=utf8', 
                     fpdb_db.PGSQL: 'postgresql://', 
                     fpdb_db.SQLITE: 'sqlite://', }
-        self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=True)
+        self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=False)
         #self.engine = create_engine('sqlite:///:memory:', echo=True)
         self.Session = sessionmaker(bind = self.engine)
         self.session = self.Session(autocommit=False, autoflush=True) # 'default' session
