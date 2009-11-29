@@ -76,6 +76,7 @@ import GuiTableViewer
 import GuiAutoImport
 import GuiGraphViewer
 import GuiSessionViewer
+from handreplayer import HandReplayer
 import SQL
 import Database
 import FpdbSQLQueries
@@ -403,7 +404,7 @@ class fpdb:
                                  ('viewers', None, '_Viewers'),
                                  ('autoimp', None, '_Auto Import and HUD', '<control>A', 'Auto Import and HUD', self.tab_auto_import),
                                  ('graphs', None, '_Graphs', '<control>G', 'Graphs', self.tabGraphViewer),
-                                 ('handreplay', None, 'Hand _Replayer (todo)', None, 'Hand Replayer (todo)', self.not_implemented),
+                                 ('handreplay', None, 'Hand _Replayer (todo)', None, 'Hand Replayer (todo)', self.hand_replayer),
                                  ('playerdetails', None, 'Player _Details (todo)', None, 'Player Details (todo)', self.not_implemented),
                                  ('playerstats', None, '_Player Stats (tabulated view)', '<control>P', 'Player Stats (tabulated view)', self.tab_player_stats),
                                  ('posnstats', None, 'P_ositional Stats (tabulated view)', '<control>O', 'Positional Stats (tabulated view)', self.tab_positional_stats),
@@ -541,6 +542,12 @@ class fpdb:
         self.threads.append(new_import_thread)
         bulk_tab=new_import_thread.get_vbox()
         self.add_and_display_tab(bulk_tab, "Bulk Import")
+
+    def hand_replayer(self, widget, data=None):
+        new_thread = HandReplayer(self.config, self.sql, self.window)
+        self.threads.append(new_thread)
+        ps_tab=new_thread.get_vbox()
+        self.add_and_display_tab(ps_tab, "Hand Replayer")
 
     def tab_player_stats(self, widget, data=None):
         new_ps_thread = GuiPlayerStats.GuiPlayerStats(self.config, self.sql, self.window)
