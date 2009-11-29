@@ -5,7 +5,7 @@ This package contains all classes to be mapped and mappers themselves
 
 import logging
 from decimal import Decimal
-from sqlalchemy.orm import mapper, relation
+from sqlalchemy.orm import mapper, relation, reconstructor
 from sqlalchemy.sql import select
 
 
@@ -51,30 +51,25 @@ class Gametype(MappedBase):
         return get_or_create(Gametype, session, **gametype)[0]
 
 
-class HandAction(object):
+class HandActions(object):
     """Class reflecting HandsActions db table"""
-    def initFromImportedHand(self, action_tuple, actionNo=None, street=None, handPlayer=None):
-        if actionNo is not None: self.actionNo = actionNo
-        if handPlayer is not None: self.handPlayer = handPlayer
-        if street is not None: self.street = street
-        #import pdb; pdb.set_trace()
-        action, extra = action_tuple[1], action_tuple[2:] # we don't need player name 
-        self.action = action
-        # FIXME: add support for 'discards'. I have no idea \
-        # how to put discarded cards here \\grindi
-            # The schema for draw games hasn't been decided - ignoring it is correct \\ Carl G
-        if action in ('folds', 'checks', 'stands pat'):
-            pass
-        elif action in ('bets', 'calls', 'bringin'):
-            self.amount, self.allIn = extra
-        elif action == 'raises':
-            Rb, Rt, C, self.allIn = extra
-            self.amount = Rt 
-        elif action == 'posts':
-            blindtype, self.amount, self.allIn = extra
-            self.action = '%s %s' % (action, blindtype)
-        elif action == 'ante':
-             self.amount, self.allIn = extra
+    def initFromImportedHand(self, hand, actions):
+        print actions
+        self.hand = hand
+        self.actions = {}
+        for street, street_actions in actions.iteritems():
+            self.actions[street] = []
+            for v in street_actions:
+                hp = hand.handplayers_by_name[v[0]]
+                self.actions[street].append({'street': street, 'pid': hp.id, 'seat': hp.seatNo, 'action':v})
+
+    @property
+    def flat_actions(self):
+        actions = []
+        for street in self.hand.allStreets:
+            actions += self.actions[street]
+        return actions
+
 
 
 class HandInternal(DerivedStats):
@@ -89,7 +84,7 @@ class HandInternal(DerivedStats):
         self.gametype_dict = hand.gametype 
 
         self.attachHandPlayers(hand)
-        #self.attachActions(hand) #FIXME: write actions and uncomment line below
+        self.attachActions(hand) 
 
         self.assembleHands(hand)
         self.assembleHandsPlayers(hand)
@@ -101,13 +96,15 @@ class HandInternal(DerivedStats):
             hp.playerId = Player.get_or_create(session, self.siteId, hp.name).id
 
     def getPlayerByName(self, name):
-        for hp in self.handPlayers:
-            pname = (hp.player and hp.player.name) or hp.name
-            if pname == name:
-                return hp
+        if not hasattr(self, 'handplayers_by_name'):
+            self.handplayers_by_name = {}
+            for hp in self.handPlayers:
+                pname = getattr(hp, 'name', None) or hp.player.name
+                self.handplayers_by_name[pname] = hp
+        return self.handplayers_by_name[name]
 
     def attachHandPlayers(self, hand):
-        """Fills HandInternal.handPlayers list"""
+        """Fill HandInternal.handPlayers list. Create self.handplayers_by_name"""
         self.handplayers_by_name = {}
         for seat, name, chips in hand.players:
             p = HandPlayer(hand = self, imported_hand=hand, seatNo=seat, 
@@ -115,13 +112,9 @@ class HandInternal(DerivedStats):
             self.handplayers_by_name[name] = p
         
     def attachActions(self, hand):
-        """Fills HandPlayers.actions list for each attached player"""
-        for street, actions in hand.actions.iteritems():
-            for i, action in enumerate(actions):
-                p = self.handplayers_by_name[action[0]]
-                a = HandAction()
-                a.initFromImportedHand(action, actionNo=i, street=street, handPlayer=p)
-                p.actions.append(a)
+        """Create HandActions object"""
+        a = HandActions()
+        a.initFromImportedHand(self, hand.actions)
 
     def isDuplicate(self, session):
         """Checks if current hand already exists in db
@@ -141,6 +134,34 @@ class HandInternal(DerivedStats):
             s.append('%d. %s' % (i, p.player.name or '???'))
         return '\n'.join(s)
 
+    @property
+    def boardcards(self):
+        cards = []
+        for i in range(5):
+            cards.append(getattr(self, 'boardcard%d' % (i+1), None))
+        return filter(bool, cards)
+
+    @property
+    def HandClass(self):
+        """Return HoldemOmahaHand or something like this"""
+        import Hand
+        if self.gametype.base == 'hold':
+            return Hand.HoldemOmahaHand
+        elif self.gametype.base == 'draw':
+            return Hand.DrawHand
+        elif self.gametype.base == 'stud':
+            return Hand.StudHand
+        raise Exception("Unknow gametype.base: '%s'" % self.gametype.base)
+
+    @property
+    def allStreets(self):
+        return self.HandClass.allStreets
+
+    @property
+    def actionStreets(self):
+        return self.HandClass.actionStreets
+
+
 
 class HandPlayer(MappedBase):
     """Class reflecting HandsPlayers db table"""
@@ -149,6 +170,10 @@ class HandPlayer(MappedBase):
             imported_hand = kwargs.pop('imported_hand')
             self.position = self.getPosition(imported_hand, kwargs['seatNo'])
         super(HandPlayer, self).__init__(**kwargs)
+
+    @reconstructor
+    def init_on_load(self):
+        self.name = self.player.name
 
     @staticmethod
     def getPosition(hand, seat):
@@ -188,6 +213,13 @@ class HandPlayer(MappedBase):
                 return 'B'
             else:
                 return str(seat)
+
+    @property
+    def cards(self):
+        cards = []
+        for i in range(7):
+            cards.append(getattr(self, 'card%d' % (i+1), None))
+        return filter(bool, cards)
 
 
 class Site(object):
@@ -256,11 +288,10 @@ mapper (Site, sites_table, properties={
     'players': relation(Player, backref = 'site'),
     'gametypes': relation(Gametype, backref = 'site'),
 })
-mapper (HandAction, hands_actions_table, properties={})
+mapper (HandActions, hands_actions_table, properties={})
 mapper (HandInternal, hands_table, properties={
     'handPlayers': relation(HandPlayer, backref='hand'),
+    'actions_all':     relation(HandActions, backref='hand', uselist=False),
 })
-mapper (HandPlayer, hands_players_table, properties={
-    'actions': relation(HandAction, backref='handPlayer'),
-})
+mapper (HandPlayer, hands_players_table, properties={})
 

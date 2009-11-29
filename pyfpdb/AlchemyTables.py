@@ -85,9 +85,8 @@ Index('siteHandNo', hands_table.c.siteHandNo, hands_table.c.gametypeId, unique=T
 
 hands_actions_table = Table('HandsActions', metadata,
     Column('id',            BigIntColumn, primary_key=True, nullable=False),
-    Column('handPlayerId',  BigIntColumn, ForeignKey("HandsPlayers.id"), nullable=False),
-    Column('actionNo',      SmallInteger, nullable=False),
-    Column('action',        PickleType, nullable=False),
+    Column('handId',        BigIntColumn, ForeignKey("Hands.id"), nullable=False),
+    Column('actions',       PickleType, nullable=False),
     mysql_charset='utf8',
     mysql_engine='InnoDB',
 )
