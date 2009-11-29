@@ -65,6 +65,8 @@ class MoneyColumn(types.TypeDecorator):
             raise Exception, "Incorrect amount:" + repr(value)
 
     def process_result_value(self, value, dialect):
+        if value is None:
+            return None
         return Decimal(value)/100
 
 
