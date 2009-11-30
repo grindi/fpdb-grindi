@@ -2296,7 +2296,7 @@ class Database:
                         )
         result=cursor.fetchone()
 
-        expectedValuesDecimal = { 2  : "entries", 3 : "prizepool", 6  : "buyInChips", 9  : "rebuyChips", 
+        expectedValuesDecimal = { 2  : "entries", 3 : "prizepool", 6  : "buyinChips", 9  : "rebuyChips", 
                                   10 : "addOnChips", 11 : "rebuyAmount", 12 : "addOnAmount", 13 : "totalRebuys", 
                                   14 : "totalAddOns", 15 : "koBounty" }
         expectedValues = { 7 : "tourneyName", 16 : "tourneyComment"  }
@@ -2345,7 +2345,7 @@ class Database:
             # TODO : deal with matrix Id processed
             cursor.execute (self.sql.query['insertTourney'].replace('%s', self.sql.query['placeholder']),
                                 (dbTourneyTypeId, tourney.tourNo, tourney.entries, tourney.prizepool, starttime,
-                                 endtime, tourney.buyInChips, tourney.tourneyName, 0, tourney.rebuyChips, tourney.addOnChips,
+                                 endtime, tourney.buyinChips, tourney.tourneyName, 0, tourney.rebuyChips, tourney.addOnChips,
                                  tourney.rebuyAmount, tourney.addOnAmount, tourney.totalRebuys, tourney.totalAddOns, tourney.koBounty,
                                  tourney.tourneyComment, tCommentTs)
                                 )
@@ -2364,7 +2364,7 @@ class Database:
 
             cursor.execute (self.sql.query['updateTourney'].replace('%s', self.sql.query['placeholder']),
                                 (dbTourneyTypeId, tourney.entries, tourney.prizepool, starttime,
-                                 endtime, tourney.buyInChips, tourney.tourneyName, 0, tourney.rebuyChips, tourney.addOnChips,
+                                 endtime, tourney.buyinChips, tourney.tourneyName, 0, tourney.rebuyChips, tourney.addOnChips,
                                  tourney.rebuyAmount, tourney.addOnAmount, tourney.totalRebuys, tourney.totalAddOns, tourney.koBounty,
                                  tourney.tourneyComment, tCommentTs, tourneyID)
                             )

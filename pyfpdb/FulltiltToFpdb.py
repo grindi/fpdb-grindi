@@ -576,7 +576,7 @@ class Fulltilt(HandHistoryConverter):
                     }
 
 
-        dictHolders = { "BUYINCHIPS"        : "buyInChips",
+        dictHolders = { "BUYINCHIPS"        : "buyinChips",
                         "ENTRIES"           : "entries",
                         "PRIZEPOOL"         : "prizepool",
                         "REBUY_AMOUNT"      : "rebuyAmount",
