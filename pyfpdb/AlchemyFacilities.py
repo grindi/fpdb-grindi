@@ -92,6 +92,8 @@ class MappedBase(object):
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
 
+    def get_columns_names(self):
+        return [i.name for i in self._sa_class_manager.mapper.c]
 
 def get_or_create(klass, session, **kwargs):
     """ 

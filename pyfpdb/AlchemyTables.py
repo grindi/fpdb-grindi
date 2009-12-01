@@ -346,19 +346,18 @@ tourneys_table = Table('Tourneys', metadata,
     Column('id',            Integer, primary_key=True), 
     Column('tourneyTypeId', Integer, ForeignKey("TourneyTypes.id"), nullable=False, default=1), 
     Column('siteTourneyNo', BigIntColumn, nullable=False), # BIGINT NOT NULL
-    # FIXME: i think be should allow null here as some sites don't provide entries number
-    Column('entries',       Integer, nullable=False), # INT NOT NULL
-    Column('prizepool',     Integer, nullable=False), # INT NOT NULL
-    Column('startTime',     DateTime, nullable=False), # DATETIME NOT NULL
-    Column('endTime',       DateTime), # DATETIME
+    Column('entries',       Integer), # INT NOT NULL
+    Column('prizepool',     Integer), # INT NOT NULL
+    Column('tourStartTime',     DateTime), # DATETIME NOT NULL
+    Column('tourEndTime',       DateTime), # DATETIME
     Column('buyinChips',    Integer), # INT
     Column('tourneyName',   String(40)), # varchar(40)
     # Mask use : 1=Positionnal Winnings|2=Match1|4=Match2|...|pow(2,n)=Matchn 
     Column('matrixIdProcessed',SmallInteger, default=0), # TINYINT UNSIGNED DEFAULT 0   
     Column('rebuyChips',    Integer, default=0), # INT DEFAULT 0
     Column('addonChips',    Integer, default=0), # INT DEFAULT 0
-    Column('rebuyAmount',   Integer, default=0), # INT DEFAULT 0
-    Column('addonAmount',   Integer, default=0), # INT DEFAULT 0
+    Column('rebuyAmount',   MoneyColumn, default=0), # INT DEFAULT 0
+    Column('addonAmount',   MoneyColumn, default=0), # INT DEFAULT 0
     Column('totalRebuys',   Integer, default=0), # INT DEFAULT 0
     Column('totalAddons',   Integer, default=0), # INT DEFAULT 0
     Column('koBounty',      Integer, default=0), # INT DEFAULT 0
@@ -374,7 +373,7 @@ tourney_types_table = Table('TourneyTypes', metadata,
     Column('id',            Integer, primary_key=True), 
     Column('siteId',        SmallInteger, ForeignKey("Sites.id"), nullable=False), 
     Column('buyin',         Integer, nullable=False), # INT NOT NULL
-    Column('fee',           Integer, nullable=False), # INT NOT NULL
+    Column('fee',           Integer, nullable=False, default=0), # INT NOT NULL
     Column('maxSeats',      Boolean, nullable=False, default=-1), # INT NOT NULL DEFAULT -1
     Column('knockout',      Boolean, nullable=False, default=False), # BOOLEAN NOT NULL DEFAULT False
     Column('rebuyOrAddon',  Boolean, nullable=False, default=False), # BOOLEAN NOT NULL DEFAULT False
@@ -387,19 +386,19 @@ tourney_types_table = Table('TourneyTypes', metadata,
     mysql_engine='InnoDB',
 )
 Index('tourneyTypes_all', 
-    tourney_types_table.c.buyin, tourney_types_table.c.fee, tourney_types_table.c.maxSeats, 
-    tourney_types_table.c.knockout, tourney_types_table.c.rebuyOrAddon, tourney_types_table.c.speed, 
-    tourney_types_table.c.headsUp, tourney_types_table.c.shootout, tourney_types_table.c.matrix, 
-    tourney_types_table.c.sng)
+    tourney_types_table.c.siteId, tourney_types_table.c.buyin, tourney_types_table.c.fee, 
+    tourney_types_table.c.maxSeats, tourney_types_table.c.knockout, tourney_types_table.c.rebuyOrAddon, 
+    tourney_types_table.c.speed, tourney_types_table.c.headsUp, tourney_types_table.c.shootout, 
+    tourney_types_table.c.matrix, tourney_types_table.c.sng)
 
 
 tourneys_players_table = Table('TourneysPlayers', metadata,
     Column('id',            BigIntColumn, primary_key=True), 
     Column('tourneyId',     Integer, ForeignKey("Tourneys.id"), nullable=False), 
     Column('playerId',      Integer, ForeignKey("Players.id"), nullable=False), 
-    Column('payinAmount',   Integer, nullable=False), # INT NOT NULL
-    Column('rank',          Integer, nullable=False), # INT NOT NULL
-    Column('winnings',      Integer, nullable=False), # INT NOT NULL
+    Column('payinAmount',   Integer), # INT NOT NULL
+    Column('rank',          Integer), # INT NOT NULL
+    Column('winnings',      Integer), # INT NOT NULL
     Column('nbRebuys',      Integer, default=0), # INT DEFAULT 0
     Column('nbAddons',      Integer, default=0), # INT DEFAULT 0
     Column('nbKO',          Integer, default=0), # INT DEFAULT 0

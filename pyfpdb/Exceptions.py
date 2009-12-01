@@ -5,9 +5,10 @@ class FpdbError(Exception):
         return repr(self.value)
 
 class FpdbParseError(FpdbError): 
-    def __init__(self,value='',hid=''):
+    def __init__(self,value='',hid='', hand=None):
         self.value = value
         self.hid = hid
+        self.hand = hand
     def __str__(self):
         if self.hid:
             return repr("HID:"+self.hid+", "+self.value)
@@ -21,5 +22,8 @@ class FpdbMySQLFailedError(FpdbDatabaseError):
     pass
 
 class DuplicateError(FpdbError):
+    pass
+
+class IncompleteHandError(FpdbParseError):
     pass
 

@@ -43,6 +43,7 @@ import Configuration
 import Exceptions
 
 log = Configuration.get_logger("logging.conf", "importer")
+log.debug('aa')
 
 #    database interface modules
 try:
@@ -438,24 +439,25 @@ class Importer:
                         times.append((t2-t1, t3-t2))
                     except Exceptions.DuplicateError: 
                         duplicates += 1
+                    except Exceptions.IncompleteHandError, e: 
+                        partial += 1
+                        log.debug("Found incomplete hand (hid: %s)\nMessage: %s" 
+                                  "\nHand text:\n%s\n\n\n" % (e.hid, e.value, e.hand.handText))
                     else:
                         stored += 1
                 ttimes = reduce( lambda x,y: (x[0]+y[0], x[1]+y[1]), times, (0.,0.))
                 ttime = sum(ttimes)
 
 
-                print "gonna sleeep"
-                sleep(2)
-
                 flush_time = time()
                 db.session.flush()
                 flush_time = time() - flush_time
                 ttime += flush_time + time_internal
 
-                print 'fpdb_import internal time:', time_internal
-                print 'hand prepInsert time:', ttimes[0]
-                print 'hand insert:', ttimes[1]
-                print 'flush time:', ttime
+                log.debug('fpdb_import internal time: %lf' % time_internal)
+                log.debug('hand prepInsert total time: %lf' % ttimes[0])
+                log.debug('hand insert total: %lf' % ttimes[1] )
+                log.debug('flush time: %lf' % flush_time)
             else:
                 # conversion didn't work
                 # TODO: appropriate response?

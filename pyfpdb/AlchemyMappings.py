@@ -4,14 +4,17 @@ This package contains all classes to be mapped and mappers themselves
 """
 
 import logging
+import re
 from decimal import Decimal
 from sqlalchemy.orm import mapper, relation, reconstructor
 from sqlalchemy.sql import select
+from collections import defaultdict
 
 
 from AlchemyTables import *
 from AlchemyFacilities import get_or_create, MappedBase
 from DerivedStats import DerivedStats
+from Exceptions import IncompleteHandError, FpdbError
 
 
 class Player(MappedBase):
@@ -54,7 +57,6 @@ class Gametype(MappedBase):
 class HandActions(object):
     """Class reflecting HandsActions db table"""
     def initFromImportedHand(self, hand, actions):
-        print actions
         self.hand = hand
         self.actions = {}
         for street, street_actions in actions.iteritems():
@@ -91,7 +93,8 @@ class HandInternal(DerivedStats):
 
     def parseImportedHandStep2(self, session):
         """Fetching ids for gametypes and players"""
-        self.gametypeId = Gametype.get_or_create(session, self.siteId, self.gametype_dict).id
+        gametype = Gametype.get_or_create(session, self.siteId, self.gametype_dict)
+        self.gametypeId = gametype.id
         for hp in self.handPlayers:
             hp.playerId = Player.get_or_create(session, self.siteId, hp.name).id
 
@@ -115,6 +118,74 @@ class HandInternal(DerivedStats):
         """Create HandActions object"""
         a = HandActions()
         a.initFromImportedHand(self, hand.actions)
+
+    def parseImportedTournament(self, hand, session):
+        """Fetching tourney, its type and players
+        
+        Must be called after Step2
+        """
+        if self.gametype_dict['type'] != 'tour': return
+
+        # check for consistense
+        for i in ('buyin', 'siteTourneyNo'):
+            if not hasattr(hand, i):
+                raise IncompleteHandError( 
+                    "Field '%s' required for tournaments" % i, self.id, hand )
+
+        # repair old-style buyin value
+        m = re.match('\$(\d+)\+\$(\d+)', hand.buyin)
+        if m is not None:
+            hand.buyin, self.fee = m.groups()
+
+        # fetch tourney type
+        tour_type_hand2db = {
+            'buyin':         'buyin',
+            'fee':           'fee',
+            'speed':         'speed',
+            'maxSeats':      'maxseats',
+            'knockout':      'isKO',
+            'rebuyOrAddon':  'isRebuy',
+            'headsUp':       'isHU',
+            'shootout':      'isShootout',
+            'matrix':        'isMatrix',
+            'sng':           'isSNG',
+        }
+        tour_type_index = dict([
+                    ( i_db, getattr(hand, i_hand, None) )
+                    for i_db, i_hand in tour_type_hand2db.iteritems() 
+                ])
+        tour_type_index['siteId'] = self.siteId
+        tour_type = TourneyType.get_or_create(session, **tour_type_index)
+
+        # fetch and update tourney
+        tour  = Tourney.get_or_create(session, hand.siteTourneyNo, tour_type.id)
+        cols = tour.get_columns_names()
+        for col in cols:
+            hand_val = getattr(hand, col, None)
+            if col in ('id', 'tourneyTypeId', 'comment', 'commentTs') or hand_val is None:
+                continue
+            db_val = getattr(tour, col, None)
+            if db_val is None:
+                setattr(tour, col, hand_val)
+            elif col == 'koBounty':
+                setattr(tour, col, max(db_val, hand_val))
+            elif col == 'tourStartTime' and hand.handStart:
+                setattr(tour, col, min(db_val, hand.handStart))
+
+        if tour.entries is None and tour_type.sng:
+            tour.entries = tour_type.maxSeats
+
+        # fetch and update tourney players
+        for hp in self.handPlayers:
+            tp = TourneyPlayer.get_or_create(session, tour.id, hp.playerId)
+            # FIXME: other TourneysPlayers should be added here
+
+        session.flush()
+
+                
+
+
+
 
     def isDuplicate(self, session):
         """Checks if current hand already exists in db
@@ -245,6 +316,40 @@ class Site(object):
         connection.execute(sites_table.insert(), cls.INITIAL_DATA_DICTS)
 
 
+class Tourney(MappedBase):
+    """Class reflecting Tourneys db table"""
+
+    @classmethod
+    def get_or_create(cls, session, siteTourneyNo, tourneyTypeId):
+        """Fetch tourney by index or creates one if none.  """
+        return get_or_create(cls, session, siteTourneyNo=siteTourneyNo, 
+                                tourneyTypeId=tourneyTypeId)[0]
+    
+
+
+class TourneyType(MappedBase):
+    """Class reflecting TourneysType db table"""
+
+    @classmethod
+    def get_or_create(cls, session, **kwargs):
+        """Fetch tourney type by index or creates one if none
+
+        Required kwargs: 
+            buyin fee speed maxSeats knockout 
+            rebuyOrAddon headsUp shootout matrix sng
+        """
+        return get_or_create(cls, session, **kwargs)[0]
+
+
+class TourneyPlayer(MappedBase):
+    """Class reflecting TourneysPlayers db table"""
+
+    @classmethod
+    def get_or_create(cls, session, tourneyId, playerId):
+        """Fetch tourney player by index or creates one if none """
+        return get_or_create(cls, session, tourneyId=tourneyId, playerId=playerId)
+
+
 class Version(object):
     """Provides read/write access for version var"""
     CURRENT_VERSION = 118 # db version for current release
@@ -262,16 +367,19 @@ class Version(object):
     @classmethod
     def get(cls):
         if cls.ver is None:
-           cls.ver = cls.conn.execute(select(['version'], settings_table)).fetchone()[0]
+            try:
+                cls.ver = cls.conn.execute(select(['version'], settings_table)).fetchone()[0]
+            except:
+                raise
         return cls.ver
 
     @classmethod
     def set(cls, value):
-        if cls.ver is None:
+        if cls.conn.execute(settings_table.select()).rowcount==0:
             cls.conn.execute(settings_table.insert(), version=value)
         else:
             cls.conn.execute(settings_table.update().values(version=value))
-        cls.ver = None
+        cls.ver = value
     
     @classmethod
     def set_initial(cls):
@@ -283,10 +391,12 @@ mapper (Gametype, gametypes_table, properties={
 })
 mapper (Player, players_table, properties={
     'playerHands': relation(HandPlayer, backref='player'),
+    'playerTourney': relation(TourneyPlayer, backref='player'),
 })
 mapper (Site, sites_table, properties={
-    'players': relation(Player, backref = 'site'),
     'gametypes': relation(Gametype, backref = 'site'),
+    'players': relation(Player, backref = 'site'),
+    'tourneyTypes': relation(TourneyType, backref = 'site'),
 })
 mapper (HandActions, hands_actions_table, properties={})
 mapper (HandInternal, hands_table, properties={
@@ -294,4 +404,15 @@ mapper (HandInternal, hands_table, properties={
     'actions_all':     relation(HandActions, backref='hand', uselist=False),
 })
 mapper (HandPlayer, hands_players_table, properties={})
+
+mapper (Tourney, tourneys_table) 
+mapper (TourneyType, tourney_types_table, properties={
+    'tourneys': relation(Tourney, backref='type'),
+})
+mapper (TourneyPlayer, tourneys_players_table) 
+
+class LambdaKeyDict(defaultdict):
+    """Operates like defaultdict but passes key argument to the factory function"""
+    def __missing__(key):
+        return self.default_factory(key)
 

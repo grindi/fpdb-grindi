@@ -194,6 +194,7 @@ class Hand(object):
         if self.internal.isDuplicate(s):
             s.close()
             raise DuplicateError()
+        self.internal.parseImportedTournament(self, s)
         s.close()
 
     def insert(self, db):
