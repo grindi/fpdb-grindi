@@ -182,11 +182,6 @@ class HandInternal(DerivedStats):
 
         session.flush()
 
-                
-
-
-
-
     def isDuplicate(self, session):
         """Checks if current hand already exists in db
         
@@ -248,7 +243,7 @@ class HandPlayer(MappedBase):
 
     @staticmethod
     def getPosition(hand, seat):
-        """Returns position value like 'B', 'S', 0, 1, ...
+        """Returns position value like 'B', 'S', '0', '1', ...
 
         >>> class A(object): pass
         ... 

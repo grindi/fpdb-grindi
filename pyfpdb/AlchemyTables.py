@@ -100,14 +100,14 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('position',          CHAR(1)), #CHAR(1)
     Column('seatNo',            SmallInteger, nullable=False), #SMALLINT NOT NULL
         
-    Column('card1',             SmallInteger), #smallint NOT NULL,
-    Column('card2',             SmallInteger), #smallint NOT NULL
-    Column('card3',             SmallInteger), #smallint
-    Column('card4',             SmallInteger), #smallint
-    Column('card5',             SmallInteger), #smallint
-    Column('card6',             SmallInteger), #smallint
-    Column('card7',             SmallInteger), #smallint
-    Column('startCards',        SmallInteger), #smallint
+    Column('card1',             CardColumn), #smallint NOT NULL,
+    Column('card2',             CardColumn), #smallint NOT NULL
+    Column('card3',             CardColumn), #smallint
+    Column('card4',             CardColumn), #smallint
+    Column('card5',             CardColumn), #smallint
+    Column('card6',             CardColumn), #smallint
+    Column('card7',             CardColumn), #smallint
+    Column('startCards',        CardColumn), #smallint
         
     Column('ante',              Integer), #INT
     Column('winnings',          MoneyColumn, nullable=False, default=0), #int NOT NULL
