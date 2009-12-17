@@ -255,12 +255,14 @@ class HandPlayer(MappedBase):
         >>> A.maxseats = 6
         >>> A.buttonpos = 2
         >>> A.gametype = {'base': 'hold'}
-        >>> HandInternal.getPosition(A, 2)
+        >>> HandPlayer.getPosition(A, 1) # cut off
+        '1'
+        >>> HandPlayer.getPosition(A, 2) # button
         '0'
-        >>> HandInternal.getPosition(A, 1)
-        'B'
-        >>> HandInternal.getPosition(A, 6)
+        >>> HandPlayer.getPosition(A, 3) # SB
         'S'
+        >>> HandPlayer.getPosition(A, 4) # BB
+        'B'
         """
         from itertools import chain
         if hand.gametype['base'] == 'stud':
@@ -277,11 +279,11 @@ class HandPlayer(MappedBase):
             seat = (int(seat) - int(bringin))%int(hand.maxseats)
             return str(seat)
         else:
-            seat = (int(seat) - int(hand.buttonpos) + 2)%int(hand.maxseats) - 2
+            seat = (- int(seat) + int(hand.buttonpos) + 2)%int(hand.maxseats) - 2
             if seat == -2:
-                return 'S'
-            elif seat == -1:
                 return 'B'
+            elif seat == -1:
+                return 'S'
             else:
                 return str(seat)
 
