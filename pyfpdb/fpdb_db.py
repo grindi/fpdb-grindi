@@ -24,12 +24,9 @@ import math
 from time import time, strftime
 from Exceptions import *
 
-try:
-    import sqlalchemy.pool as pool
-    use_pool = True
-except ImportError:
-    logging.info("Not using sqlalchemy connection pool.")
-    use_pool = False
+from sqlalchemy import pool, create_engine
+from sqlalchemy.orm import sessionmaker
+
 
 try:
     from numpy import var
@@ -98,10 +95,9 @@ class fpdb_db:
         self.database = database
         if backend == fpdb_db.MYSQL_INNODB:
             import MySQLdb
-            if use_pool:
-                MySQLdb = pool.manage(MySQLdb, pool_size=5)
-            try:
-                self.db = MySQLdb.connect(host=host, user=user, passwd=password, db=database, use_unicode=True)
+            MySQLdb = pool.manage(MySQLdb, pool_size=5)
+#            try:
+            self.db = MySQLdb.connect(host=host, user=user, passwd=password, db=database, use_unicode=True)
             #TODO: Add port option
             except MySQLdb.Error, ex:
                 if ex.args[0] == 1045:
@@ -113,8 +109,7 @@ class fpdb_db:
         elif backend == fpdb_db.PGSQL:
             import psycopg2
             import psycopg2.extensions
-            if use_pool:
-                psycopg2 = pool.manage(psycopg2, pool_size=5)
+            psycopg2 = pool.manage(psycopg2, pool_size=5)
             psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
             # If DB connection is made over TCP, then the variables
             # host, user and password are required
@@ -150,10 +145,7 @@ class fpdb_db:
         elif backend == fpdb_db.SQLITE:
             logging.info("Connecting to SQLite:%(database)s" % {'database':database})
             import sqlite3
-            if use_pool:
-                sqlite3 = pool.manage(sqlite3, pool_size=1)
-            else:
-                logging.warning("SQLite won't work well without 'sqlalchemy' installed.")
+            sqlite3 = pool.manage(sqlite3, pool_size=1)
 
             if not os.path.isdir(Configuration.DIR_DATABASES) and not database ==  ":memory:":
                 print "Creating directory: '%s'" % (Configuration.DIR_DATABASES)
@@ -171,19 +163,29 @@ class fpdb_db:
                 logging.warning("Some database functions will not work without NumPy support")
         else:
             raise FpdbError("unrecognised database backend:"+backend)
+        # Set up alchemy
+        # i'm not sure it's ok to use the same connection here
+        db_urls = { fpdb_db.MYSQL_INNODB: 'mysql://??charset=utf8', 
+                    fpdb_db.PGSQL: 'postgresql://', 
+                    fpdb_db.SQLITE: 'sqlite://', }
+        self.engine = create_engine(db_urls[backend], creator = lambda: self.db, echo=False)
+        #self.engine = create_engine('sqlite:///:memory:', echo=True)
+        self.Session = sessionmaker(bind = self.engine)
+        self.session = self.Session(autocommit=False, autoflush=True) # 'default' session
 
         self.cursor = self.db.cursor()
         # Set up query dictionary as early in the connection process as we can.
         self.sql = FpdbSQLQueries.FpdbSQLQueries(self.get_backend_name())
         self.cursor.execute(self.sql.query['set tx level'])
-        self.wrongDbVersion = False
+
+        from AlchemyMappings import Version
+        Version(self.engine)
+
         try:
-            self.cursor.execute("SELECT * FROM Settings")
-            settings = self.cursor.fetchone()
-            if settings[0] != 118:
+            self.wrongDbVersion = Version.is_wrong()
+            if self.wrongDbVersion:
                 print "outdated or too new database version - please recreate tables"
-                self.wrongDbVersion = True
-        except:# _mysql_exceptions.ProgrammingError:
+        except:
             if database !=  ":memory:": print "failed to read settings table - please recreate tables"
             self.wrongDbVersion = True
     #end def connect

@@ -61,7 +61,7 @@ class Tourney(object):
         self.entries            = 0
         self.speed              = "Normal"
         self.prizepool          = None  # Make it a dict in order to deal (eventually later) with non-money winnings : {'MONEY' : amount, 'OTHER' : Value ??}
-        self.buyInChips         = None
+        self.buyinChips         = None
         self.mixed              = None
         self.isRebuy            = False
         self.isKO               = False
@@ -107,7 +107,7 @@ class Tourney(object):
                  ("ENTRIES", self.entries),
                  ("SPEED", self.speed),
                  ("PRIZE POOL", self.prizepool),
-                 ("STARTING CHIP COUNT", self.buyInChips),
+                 ("STARTING CHIP COUNT", self.buyinChips),
                  ("MIXED", self.mixed),
                  ("REBUY ADDON", self.isRebuy),
                  ("KO", self.isKO),

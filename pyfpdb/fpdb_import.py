@@ -43,6 +43,7 @@ import Configuration
 import Exceptions
 
 log = Configuration.get_logger("logging.conf", "importer")
+log.debug('aa')
 
 #    database interface modules
 try:
@@ -433,29 +434,53 @@ class Importer:
             if hhc.getStatus() and self.NEWIMPORT == False:
                 (stored, duplicates, partial, errors, ttime) = self.import_fpdb_file(db, out_path, site, q)
             elif hhc.getStatus() and self.NEWIMPORT == True:
-                #This code doesn't do anything yet
+                time_internal = time()
                 handlist = hhc.getProcessedHands()
                 self.pos_in_file[file] = hhc.getLastCharacterRead()
                 to_hud = []
+                time_internal = time() - time_internal
 
+                (stored, duplicates, partial, errors, ttime) = [0]*5
+                
+                times = []
                 for hand in handlist:
-                    if hand is not None:
-                        #try, except duplicates here?
+                    if hand is None:
+                        errors += 1
+                        continue
+                    try:
+                        t1 = time()
                         hand.prepInsert(self.database)
-                        hand.insert(self.database)
+                        t2 = time()
+                        db.session.add(hand.internal)
                         if self.callHud and hand.dbid_hands != 0:
                             to_hud.append(hand.dbid_hands)
+                    except Exceptions.DuplicateError:
+                        duplicates += 1
+                    except Exceptions.IncompleteHandError, e:
+                        partial += 1
+                        log.debug("Found incomplete hand (hid: %s)\nMessage: %s" 
+                                  "\nHand text:\n%s\n\n\n" % (e.hid, e.value, e.hand.handText))
                     else:
-                        log.error("Hand processed but empty")
-                self.database.commit()
+                        stored += 1
+                #self.database.commit()
+                ttimes = reduce( lambda x,y: (x[0]+y[0], x[1]+y[1]), times, (0.,0.))
+                ttime = sum(ttimes)
+
 
                 #pipe the Hands.id out to the HUD
                 for hid in to_hud:
                     print "fpdb_import: sending hand to hud", hand.dbid_hands, "pipe =", self.caller.pipe_to_hud
                     self.caller.pipe_to_hud.stdin.write("%s" % (hid) + os.linesep)
 
-                errors = getattr(hhc, 'numErrors')
-                stored = getattr(hhc, 'numHands')
+                flush_time = time()
+                db.session.flush()
+                flush_time = time() - flush_time
+                ttime += flush_time + time_internal
+
+                log.debug('fpdb_import internal time: %lf' % time_internal)
+                log.debug('hand prepInsert total time: %lf' % ttimes[0])
+                log.debug('hand insert total: %lf' % ttimes[1] )
+                log.debug('flush time: %lf' % flush_time)
             else:
                 # conversion didn't work
                 # TODO: appropriate response?

@@ -27,7 +27,7 @@ from HandHistoryConverter import *
 
 class Fulltilt(HandHistoryConverter):
     
-    sitename = "Fulltilt"
+    sitename = "Full Tilt Poker"
     filetype = "text"
     codepage = ["utf-16", "cp1252"]
     siteId   = 1 # Needs to match id entry in Sites database
@@ -576,7 +576,7 @@ class Fulltilt(HandHistoryConverter):
                     }
 
 
-        dictHolders = { "BUYINCHIPS"        : "buyInChips",
+        dictHolders = { "BUYINCHIPS"        : "buyinChips",
                         "ENTRIES"           : "entries",
                         "PRIZEPOOL"         : "prizepool",
                         "REBUY_AMOUNT"      : "rebuyAmount",
