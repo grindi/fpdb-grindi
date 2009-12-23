@@ -166,7 +166,6 @@ class DerivedStats(object):
         for pname, hp in self.handplayers_by_name.iteritems():
             for i, card in enumerate(chain(*[chain(*i.get(pname, [])) for i in hand.holecards.itervalues()])):
                 setattr(hp, 'card%d' % i, card)
->>>>>>> 29f8658c728d50b1f7ed557bb6e39e3fa205e365:pyfpdb/DerivedStats.py
 
         for player in hand.players:
             hcs = hand.join_holecards(player[1], asList=True)

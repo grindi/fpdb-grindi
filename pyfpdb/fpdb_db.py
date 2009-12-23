@@ -96,8 +96,8 @@ class fpdb_db:
         if backend == fpdb_db.MYSQL_INNODB:
             import MySQLdb
             MySQLdb = pool.manage(MySQLdb, pool_size=5)
-#            try:
-            self.db = MySQLdb.connect(host=host, user=user, passwd=password, db=database, use_unicode=True)
+            try:
+                self.db = MySQLdb.connect(host=host, user=user, passwd=password, db=database, use_unicode=True)
             #TODO: Add port option
             except MySQLdb.Error, ex:
                 if ex.args[0] == 1045:

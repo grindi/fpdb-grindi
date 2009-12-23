@@ -1105,7 +1105,6 @@ class Database:
             self.rollback()
     #end def drop_tables
 
-<<<<<<< HEAD:pyfpdb/Database.py
     def createAllIndexes(self):
         """Create new indexes"""
 
