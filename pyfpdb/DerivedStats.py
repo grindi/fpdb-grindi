@@ -167,13 +167,13 @@ class DerivedStats(object):
             for i, card in enumerate(chain(*[chain(*i.get(pname, [])) for i in hand.holecards.itervalues()])):
                 setattr(hp, 'card%d' % i, card)
 
-        for player in hand.players:
-            hcs = hand.join_holecards(player[1], asList=True)
-            hcs = hcs + [u'0x', u'0x', u'0x', u'0x', u'0x']
-            #for i, card in enumerate(hcs[:7], 1): #Python 2.6 syntax
-            #    self.handsplayers[player[1]]['card%s' % i] = Card.encodeCard(card)
-            for i, card in enumerate(hcs[:7]):
-                self.handsplayers[player[1]]['card%s' % (i+1)] = Card.encodeCard(card)
+        #for player in hand.players:
+        #    hcs = hand.join_holecards(player[1], asList=True)
+        #    hcs = hcs + [u'0x', u'0x', u'0x', u'0x', u'0x']
+        #    #for i, card in enumerate(hcs[:7], 1): #Python 2.6 syntax
+        #    #    self.handsplayers[player[1]]['card%s' % i] = Card.encodeCard(card)
+        #    for i, card in enumerate(hcs[:7]):
+        #        self.handsplayers[player[1]]['card%s' % (i+1)] = Card.encodeCard(card)
 
 
         # position,
@@ -384,20 +384,6 @@ class DerivedStats(object):
         betters = self.countActionOcuurences(hand.actions[hand.actionStreets[i+1]], 'bets') 
         for pname, hp in self.handplayers_by_name.iteritems():
             setattr(hp, 'street%sBets' % i, betters[pname])
-
-    def calls(self, hand, i):
-        callers = []
-        for act in hand.actions[hand.actionStreets[i+1]]:
-            if act[1] in ('calls'):
-                self.handsplayers[act[0]]['street%sCalls' % i] = 1 + self.handsplayers[act[0]]['street%sCalls' % i]
-
-    # CG - I'm sure this stat is wrong
-    # Best guess is that raise = 2 bets
-    def bets(self, hand, i):
-        betters = []
-        for act in hand.actions[hand.actionStreets[i+1]]:
-            if act[1] in ('bets'):
-                self.handsplayers[act[0]]['street%sBets' % i] = 1 + self.handsplayers[act[0]]['street%sBets' % i]
 
     def countPlayers(self, hand):
         return hand.counted_seats or len(hand.players)
