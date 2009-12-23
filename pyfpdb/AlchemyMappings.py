@@ -108,6 +108,14 @@ class HandInternal(DerivedStats):
 
     def attachHandPlayers(self, hand):
         """Fill HandInternal.handPlayers list. Create self.handplayers_by_name"""
+        hand.noSb = getattr(hand, 'noSb', None)
+        if hand.noSb is None and self.gametype_dict['base']=='hold':
+            saw_sb = False
+            for action in hand.actions[hand.actionStreets[0]]: # blindsantes
+                if action[1] == 'posts' and action[2] == 'small blind' and action[0] is not None:
+                    saw_sb = True
+            hand.noSb = saw_sb
+
         self.handplayers_by_name = {}
         for seat, name, chips in hand.players:
             p = HandPlayer(hand = self, imported_hand=hand, seatNo=seat, 
@@ -247,15 +255,26 @@ class HandPlayer(MappedBase):
 
         >>> class A(object): pass
         ... 
+        >>> A.noSb = False
         >>> A.maxseats = 6
         >>> A.buttonpos = 2
         >>> A.gametype = {'base': 'hold'}
-        >>> HandPlayer.getPosition(A, 1) # cut off
+        >>> A.players = [(i, None, None) for i in (2, 4, 5, 6)]
+        >>> HandPlayer.getPosition(A, 6) # cut off
         '1'
         >>> HandPlayer.getPosition(A, 2) # button
         '0'
-        >>> HandPlayer.getPosition(A, 3) # SB
+        >>> HandPlayer.getPosition(A, 4) # SB
         'S'
+        >>> HandPlayer.getPosition(A, 5) # BB
+        'B'
+        >>> A.noSb = True
+        >>> HandPlayer.getPosition(A, 5) # MP3
+        '2'
+        >>> HandPlayer.getPosition(A, 6) # cut off
+        '1'
+        >>> HandPlayer.getPosition(A, 2) # button
+        '0'
         >>> HandPlayer.getPosition(A, 4) # BB
         'B'
         """
@@ -274,13 +293,34 @@ class HandPlayer(MappedBase):
             seat = (int(seat) - int(bringin))%int(hand.maxseats)
             return str(seat)
         else:
-            seat = (- int(seat) + int(hand.buttonpos) + 2)%int(hand.maxseats) - 2
-            if seat == -2:
+            seats_occupied = sorted([seat_ for seat_, name, chips in hand.players], key=int)
+            if hand.buttonpos not in seats_occupied:
+                # i.e. something like
+                # Seat 3: PlayerX ($0), is sitting out
+                # The button is in seat #3
+                hand.buttonpos = max(seats_occupied, 
+                                     key = lambda s: int(s) 
+                                        if int(s) <= int(hand.buttonpos) 
+                                        else int(s) - int(hand.maxseats)
+                                    )
+            seats_occupied = sorted(seats_occupied, 
+                    key = lambda seat_: (
+                        - seats_occupied.index(seat_) 
+                        + seats_occupied.index(hand.buttonpos) 
+                        + 2) % len(seats_occupied)
+                    )
+            # now (if SB presents) seats_occupied contains seats in order: BB, SB, BU, CO, MP3, ...
+            if hand.noSb:
+                # fix order in the case nosb
+                seats_occupied = seats_occupied[1:] + seats_occupied[0:1]
+                seats_occupied.insert(1, -1)
+            seat = seats_occupied.index(seat)
+            if seat == 0:
                 return 'B'
-            elif seat == -1:
+            elif seat == 1:
                 return 'S'
             else:
-                return str(seat)
+                return str(seat-2)
 
     @property
     def cards(self):

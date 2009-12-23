@@ -19,9 +19,18 @@ FILLME
 
 from itertools import chain
 from collections import defaultdict
+import sys
 
 import Card
 from decimal import Decimal
+
+
+if sys.version[0:3] == '2.5':
+    # adding start keyword arg for enumerate
+    def enumerate(iterable, start=0):
+        for i,o in __builtins__.enumerate(iterable):
+            yield i+start,o
+
 
 DEBUG = False
 
