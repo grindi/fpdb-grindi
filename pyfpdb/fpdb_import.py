@@ -435,6 +435,7 @@ class Importer:
                 self.pos_in_file[file] = 0
             hhc = obj(in_path = file, out_path = out_path, index = idx, starsArchive = self.settings['starsArchive'])
             if hhc.getStatus() and self.NEWIMPORT == True:
+                time_internal = time()
                 handlist = hhc.getProcessedHands()
                 self.pos_in_file[file] = hhc.getLastCharacterRead()
                 to_hud = []

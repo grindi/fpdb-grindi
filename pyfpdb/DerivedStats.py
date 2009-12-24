@@ -111,8 +111,8 @@ class DerivedStats(object):
         self.calcCheckCallRaise(hand)
 
         for pname, hp in self.handplayers_by_name.iteritems():
-            hcs = hand.join_holecards(player[1], asList=True)
-            for i, card in hcs:
+            hcs = hand.join_holecards(pname, asList=True)
+            for i, card in enumerate(hcs):
                 setattr(hp, 'card%d' % i, card)
             hp.startCards = Card.calcStartCards(hand, pname)
 
