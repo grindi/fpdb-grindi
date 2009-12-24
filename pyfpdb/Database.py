@@ -1464,9 +1464,10 @@ class Database:
         c = self.get_cursor()
         c.executemany(q, inserts)
 
-    def storeHudCache(self, gid, pids, starttime, pdata):
+    def storeHudCache(self, hand):
         """Update cached statistics. If update fails because no record exists, do an insert."""
 
+        starttime = hand.handStart
         if self.use_date_in_hudcache:
             styleKey = datetime.strftime(starttime, 'd%y%m%d')
             #styleKey = "d%02d%02d%02d" % (hand_start_time.year-2000, hand_start_time.month, hand_start_time.day)
@@ -1481,70 +1482,70 @@ class Database:
             
         #print "DEBUG: %s %s %s" %(hid, pids, pdata)
         inserts = []
-        for p in pdata:
+        for hp in hand.handplayers_by_name.itervalues():
             line = [0]*61
             
             line[0] = 1 # HDs
-            if pdata[p]['street0VPI']:                  line[1] = 1
-            if pdata[p]['street0Aggr']:                 line[2] = 1
-            if pdata[p]['street0_3BChance']:            line[3] = 1
-            if pdata[p]['street0_3BDone']:              line[4] = 1
-            if pdata[p]['street1Seen']:                 line[5] = 1
-            if pdata[p]['street2Seen']:                 line[6] = 1
-            if pdata[p]['street3Seen']:                 line[7] = 1
-            if pdata[p]['street4Seen']:                 line[8] = 1
-            if pdata[p]['sawShowdown']:                 line[9] = 1
-            if pdata[p]['street1Aggr']:                 line[10] = 1
-            if pdata[p]['street2Aggr']:                 line[11] = 1
-            if pdata[p]['street3Aggr']:                 line[12] = 1
-            if pdata[p]['street4Aggr']:                 line[13] = 1
-            if pdata[p]['otherRaisedStreet1']:          line[14] = 1
-            if pdata[p]['otherRaisedStreet2']:          line[15] = 1
-            if pdata[p]['otherRaisedStreet3']:          line[16] = 1
-            if pdata[p]['otherRaisedStreet4']:          line[17] = 1
-            if pdata[p]['foldToOtherRaisedStreet1']:    line[18] = 1
-            if pdata[p]['foldToOtherRaisedStreet2']:    line[19] = 1
-            if pdata[p]['foldToOtherRaisedStreet3']:    line[20] = 1
-            if pdata[p]['foldToOtherRaisedStreet4']:    line[21] = 1
-            line[22] = pdata[p]['wonWhenSeenStreet1']
-            line[23] = pdata[p]['wonAtSD']
-            if pdata[p]['stealAttemptChance']:          line[24] = 1
-            if pdata[p]['stealAttempted']:              line[25] = 1
-            if pdata[p]['foldBbToStealChance']:         line[26] = 1
-            if pdata[p]['foldedBbToSteal']:             line[27] = 1
-            if pdata[p]['foldSbToStealChance']:         line[28] = 1
-            if pdata[p]['foldedSbToSteal']:             line[29] = 1
-            if pdata[p]['street1CBChance']:             line[30] = 1
-            if pdata[p]['street1CBDone']:               line[31] = 1
-            if pdata[p]['street2CBChance']:             line[32] = 1
-            if pdata[p]['street2CBDone']:               line[33] = 1
-            if pdata[p]['street3CBChance']:             line[34] = 1
-            if pdata[p]['street3CBDone']:               line[35] = 1
-            if pdata[p]['street4CBChance']:             line[36] = 1
-            if pdata[p]['street4CBDone']:               line[37] = 1
-            if pdata[p]['foldToStreet1CBChance']:       line[38] = 1
-            if pdata[p]['foldToStreet1CBDone']:         line[39] = 1
-            if pdata[p]['foldToStreet2CBChance']:       line[40] = 1
-            if pdata[p]['foldToStreet2CBDone']:         line[41] = 1
-            if pdata[p]['foldToStreet3CBChance']:       line[42] = 1
-            if pdata[p]['foldToStreet3CBDone']:         line[43] = 1
-            if pdata[p]['foldToStreet4CBChance']:       line[44] = 1
-            if pdata[p]['foldToStreet4CBDone']:         line[45] = 1
-            line[46] = pdata[p]['totalProfit']
-            if pdata[p]['street1CheckCallRaiseChance']: line[47] = 1
-            if pdata[p]['street1CheckCallRaiseDone']:   line[48] = 1
-            if pdata[p]['street2CheckCallRaiseChance']: line[49] = 1
-            if pdata[p]['street2CheckCallRaiseDone']:   line[50] = 1
-            if pdata[p]['street3CheckCallRaiseChance']: line[51] = 1
-            if pdata[p]['street3CheckCallRaiseDone']:   line[52] = 1
-            if pdata[p]['street4CheckCallRaiseChance']: line[53] = 1
-            if pdata[p]['street4CheckCallRaiseDone']:   line[54] = 1
-            line[55] = gid    # gametypeId
-            line[56] = pids[p]    # playerId
-            line[57] = len(pids)    # activeSeats
-            pos = {-2:'B', -1:'S', 0:'D', 1:'C', 2:'M', 3:'M', 4:'M', 5:'E', 6:'E', 7:'E', 8:'E', 9:'E' }
-            line[58] = pos[pdata[p]['position']]
-            line[59] = pdata[p]['tourneyTypeId']
+            if hp.street0VPI:                  line[1] = 1
+            if hp.street0Aggr:                 line[2] = 1
+            if hp.street0_3BChance:            line[3] = 1
+            if hp.street0_3BDone:              line[4] = 1
+            if hp.street1Seen:                 line[5] = 1
+            if hp.street2Seen:                 line[6] = 1
+            if hp.street3Seen:                 line[7] = 1
+            if hp.street4Seen:                 line[8] = 1
+            if hp.sawShowdown:                 line[9] = 1
+            if hp.street1Aggr:                 line[10] = 1
+            if hp.street2Aggr:                 line[11] = 1
+            if hp.street3Aggr:                 line[12] = 1
+            if hp.street4Aggr:                 line[13] = 1
+            if hp.otherRaisedStreet1:          line[14] = 1
+            if hp.otherRaisedStreet2:          line[15] = 1
+            if hp.otherRaisedStreet3:          line[16] = 1
+            if hp.otherRaisedStreet4:          line[17] = 1
+            if hp.foldToOtherRaisedStreet1:    line[18] = 1
+            if hp.foldToOtherRaisedStreet2:    line[19] = 1
+            if hp.foldToOtherRaisedStreet3:    line[20] = 1
+            if hp.foldToOtherRaisedStreet4:    line[21] = 1
+            line[22] = hp.wonWhenSeenStreet1
+            line[23] = hp.wonAtSD
+            if hp.stealAttemptChance:          line[24] = 1
+            if hp.stealAttempted:              line[25] = 1
+            if hp.foldBbToStealChance:         line[26] = 1
+            if hp.foldedBbToSteal:             line[27] = 1
+            if hp.foldSbToStealChance:         line[28] = 1
+            if hp.foldedSbToSteal:             line[29] = 1
+            if hp.street1CBChance:             line[30] = 1
+            if hp.street1CBDone:               line[31] = 1
+            if hp.street2CBChance:             line[32] = 1
+            if hp.street2CBDone:               line[33] = 1
+            if hp.street3CBChance:             line[34] = 1
+            if hp.street3CBDone:               line[35] = 1
+            if hp.street4CBChance:             line[36] = 1
+            if hp.street4CBDone:               line[37] = 1
+            if hp.foldToStreet1CBChance:       line[38] = 1
+            if hp.foldToStreet1CBDone:         line[39] = 1
+            if hp.foldToStreet2CBChance:       line[40] = 1
+            if hp.foldToStreet2CBDone:         line[41] = 1
+            if hp.foldToStreet3CBChance:       line[42] = 1
+            if hp.foldToStreet3CBDone:         line[43] = 1
+            if hp.foldToStreet4CBChance:       line[44] = 1
+            if hp.foldToStreet4CBDone:         line[45] = 1
+            line[46] = hp.totalProfit
+            if hp.street1CheckCallRaiseChance: line[47] = 1
+            if hp.street1CheckCallRaiseDone:   line[48] = 1
+            if hp.street2CheckCallRaiseChance: line[49] = 1
+            if hp.street2CheckCallRaiseDone:   line[50] = 1
+            if hp.street3CheckCallRaiseChance: line[51] = 1
+            if hp.street3CheckCallRaiseDone:   line[52] = 1
+            if hp.street4CheckCallRaiseChance: line[53] = 1
+            if hp.street4CheckCallRaiseDone:   line[54] = 1
+            line[55] = hand.gametypeId
+            line[56] = hp.playerId
+            line[57] = len(hand.handplayers_by_name)
+            pos = {-2:'B', -1:'S', 'B': 'B', 'S': 'S', '0':'D', '1':'C', '2':'M', '3':'M', '4':'M', '5':'E', '6':'E', '7':'E', '8':'E', '9':'E' }
+            line[58] = pos[str(hp.position)]
+            line[59] = hp.tourneyTypeId
             line[60] = styleKey    # styleKey
             inserts.append(line)
 

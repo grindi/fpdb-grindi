@@ -478,8 +478,9 @@ class Importer:
                 ttime += flush_time + time_internal
 
                 if self.callHud:
-                    hand.updateHudCache(self.database)
-                    self.database.commit()
+                    for hand in handlist:
+                        hand.updateHudCache(self.database)
+                        self.database.commit()
 
                 log.debug('fpdb_import internal time: %lf' % time_internal)
                 log.debug('hand prepInsert total time: %lf' % ttimes[0])

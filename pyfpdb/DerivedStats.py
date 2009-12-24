@@ -284,7 +284,9 @@ class DerivedStats(object):
         Then no bets before the player with initiatives first action on current street
         ie. if player on street-1 had initiative and no donkbets occurred
         """
-        for i, street in enumerate(hand.actionStreets[2:], start=1):
+        #for i, street in enumerate(hand.actionStreets[2:], start=1):
+        for i_, street in enumerate(hand.actionStreets[2:]):
+            i = i_ + 1
             prev_actions = hand.actions[hand.actionStreets[i]]
             current_actions = hand.actions[hand.actionStreets[i+1]]
             name = self.lastBetOrRaiser(prev_actions)
@@ -321,7 +323,9 @@ class DerivedStats(object):
         streetXCheckCallRaiseChance = got raise/bet after check
         streetXCheckCallRaiseDone = checked. got raise/bet. didn't fold
         """
-        for i, street in enumerate(hand.actionStreets[2:], start=1):
+        #for i, street in enumerate(hand.actionStreets[2:], start=1):
+        for i_, street in enumerate(hand.actionStreets[2:]):
+            i = i_ + 1
             actions = hand.actions[hand.actionStreets[i]]
             checkers = set()
             initial_raiser = None
@@ -344,7 +348,9 @@ class DerivedStats(object):
 
         CG: CheckCall would be a much better name for this.
         """
-        for i, street in enumerate(hand.actionStreets[2:], start=1):
+        #for i, street in enumerate(hand.actionStreets[2:], start=1):
+        for i_, street in enumerate(hand.actionStreets[2:]):
+            i = i_ + 1
             actions = hand.actions[hand.actionStreets[i]]
             checkers = set()
             initial_raiser = None

@@ -239,7 +239,7 @@ class Hand(object):
 #            pass
 
     def updateHudCache(self, db):
-        db.storeHudCache(self.dbid_gt, self.dbid_pids, self.starttime, self.stats.getHandsPlayers())
+        db.storeHudCache(self.internal)
 
 
     def addPlayer(self, seat, name, chips):

@@ -277,7 +277,8 @@ class TableWidget(gtk.Frame):
         seat in range(maxseats)
         """
         x,y = cls.convert_relative_cooordinates( 
-                *cls.get_relative_seat_coordinates(seat, maxseats),
+                # FIXME: line below is required but raising SyntaxError on win py2.5
+                #*cls.get_relative_seat_coordinates(seat, maxseats),
                 width = rect.width - 2*padding, height = rect.height - 2*padding)
         return map(lambda c: int(c + padding), (x,y))
 
