@@ -380,12 +380,12 @@ class DerivedStats(object):
         Player is aggresor if he raises or completes
         """
         aggrers = set()
-        for act in hand.actions[hand.actionStreets[i]]:
+        for act in hand.actions[hand.actionStreets[i+1]]:
             if act[1] in ('completes', 'raises'):
                 aggrers.add(act[0])
 
         for pname, hp in self.handplayers_by_name.iteritems():
-            setattr(hp, 'street%sAggr' % i, pname in aggrers)
+            setattr(hp, 'street%dAggr' % i, pname in aggrers)
 
     def calls(self, hand, i):
         """Fill streetXCalls - amount of player's calls on current street"""
