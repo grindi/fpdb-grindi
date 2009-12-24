@@ -25,71 +25,18 @@ import Card
 from decimal import Decimal
 
 
-if sys.version[0:3] == '2.5':
-    # adding start keyword arg for enumerate
-    def enumerate(iterable, start=0):
-        for i,o in __builtins__.enumerate(iterable):
-            yield i+start,o
+#if sys.version[0:3] == '2.5':
+#    # adding start keyword arg for enumerate
+#    def enumerate(iterable, start=0):
+#        for i,o in __builtins__.enumerate(iterable):
+#            yield i+start,o
 
-
-DEBUG = False
-
-if DEBUG:
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
 
 
 class DerivedStats(object):
     def getStats(self, hand):
-        for player in hand.players:
-            self.handsplayers[player[1]] = {}
-            #Init vars that may not be used, but still need to be inserted.
-            # All stud street4 need this when importing holdem
-            self.handsplayers[player[1]]['winnings']    = 0
-            self.handsplayers[player[1]]['rake']        = 0
-            self.handsplayers[player[1]]['totalProfit'] = 0
-            self.handsplayers[player[1]]['street4Seen'] = False
-            self.handsplayers[player[1]]['street4Aggr'] = False
-            self.handsplayers[player[1]]['wonWhenSeenStreet1'] = 0.0
-            self.handsplayers[player[1]]['sawShowdown'] = False
-            self.handsplayers[player[1]]['wonAtSD']     = 0.0
-            for i in range(5): 
-                self.handsplayers[player[1]]['street%dCalls' % i] = 0
-                self.handsplayers[player[1]]['street%dBets' % i] = 0
-            for i in range(1,5):
-                self.handsplayers[player[1]]['street%dCBChance' %i] = False
-                self.handsplayers[player[1]]['street%dCBDone' %i] = False
-
-            #FIXME - Everything below this point is incomplete.
-            self.handsplayers[player[1]]['position']            = 2
-            self.handsplayers[player[1]]['tourneyTypeId']       = 1
-            self.handsplayers[player[1]]['startCards']          = 0
-            self.handsplayers[player[1]]['street0_3BChance']    = False
-            self.handsplayers[player[1]]['street0_3BDone']      = False
-            self.handsplayers[player[1]]['stealAttemptChance']  = False
-            self.handsplayers[player[1]]['stealAttempted']      = False
-            self.handsplayers[player[1]]['foldBbToStealChance'] = False
-            self.handsplayers[player[1]]['foldBbToStealChance'] = False
-            self.handsplayers[player[1]]['foldSbToStealChance'] = False
-            self.handsplayers[player[1]]['foldedSbToSteal']     = False
-            self.handsplayers[player[1]]['foldedBbToSteal']     = False
-            for i in range(1,5):
-                self.handsplayers[player[1]]['otherRaisedStreet%d' %i]          = False
-                self.handsplayers[player[1]]['foldToOtherRaisedStreet%d' %i]    = False
-                self.handsplayers[player[1]]['foldToStreet%dCBChance' %i]       = False
-                self.handsplayers[player[1]]['foldToStreet%dCBDone' %i]         = False
-                self.handsplayers[player[1]]['street%dCheckCallRaiseChance' %i] = False
-                self.handsplayers[player[1]]['street%dCheckCallRaiseDone' %i]   = False
-
         self.assembleHands(self.hand)
         self.assembleHandsPlayers(self.hand)
-
-
-        if DEBUG:
-            print "Hands:"
-            pp.pprint(self.hands)
-            print "HandsPlayers:"
-            pp.pprint(self.handsplayers)
 
     def getHands(self):
         return self.hands
