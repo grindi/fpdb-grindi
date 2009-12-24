@@ -214,6 +214,33 @@ class Hand(object):
         """ Function to create HandInternal object from database """
         h = db.session.query(HandInternal).get(handId)
         return h
+#        self.stats.getStats(self)
+#
+#        #####
+#        # End prep functions
+#        #####
+#        hh = self.stats.getHands()
+#
+#        if not db.isDuplicate(self.dbid_gt, hh['siteHandNo']):
+#            # Hands - Summary information of hand indexed by handId - gameinfo
+#            hh['gameTypeId'] = self.dbid_gt
+#            # seats TINYINT NOT NULL,
+#            hh['seats'] = len(self.dbid_pids)
+#
+#            self.dbid_hands = db.storeHand(hh)
+#            db.storeHandsPlayers(self.dbid_hands, self.dbid_pids, self.stats.getHandsPlayers())
+#            # HandsActions - all actions for all players for all streets - self.actions
+#            # HudCache data can be generated from HandsActions (HandsPlayers?)
+#            # Tourneys ?
+#            # TourneysPlayers
+#        else:
+#            log.info("Hand.insert(): hid #: %s is a duplicate" % hh['siteHandNo'])
+#            #Raise Duplicate exception?
+#            pass
+
+    def updateHudCache(self, db):
+        db.storeHudCache(self.dbid_gt, self.dbid_pids, self.starttime, self.stats.getHandsPlayers())
+
 
     def addPlayer(self, seat, name, chips):
         """Adds a player to the hand, and initialises data structures indexed by player.

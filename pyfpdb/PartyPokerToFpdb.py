@@ -81,8 +81,9 @@ class PartyPoker(HandHistoryConverter):
             (?P<TABLE_TYPE>[^#()]+)\s+          # Regular, Speed, etc
             (?P<TABLE_ID_WRAPPER>\(|\#| )        # \# means sng, ( - mtt, nothing - cash game
             (?P<TABLE_ID>\d+)  \)?   \s+        # it's global unique id for this table
-            (?:Table\s+\#(?P<TABLE_NUM>\d+).+)? # table num for mtt tournaments
-            \((?P<PLAY>Real|Play)\s+Money\)\s*  
+            (?:[^ ]+\s+\#(?P<TABLE_NUM>\d+).+)? # table num for mtt tournaments
+            (\(No\sDP\)\s)?
+            \((?P<PLAY>Real|Play)\s+Money\)\s+  
             """,
           re.VERBOSE|re.MULTILINE)
 

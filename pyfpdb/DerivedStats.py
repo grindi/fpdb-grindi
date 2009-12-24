@@ -111,17 +111,10 @@ class DerivedStats(object):
         self.calcCheckCallRaise(hand)
 
         for pname, hp in self.handplayers_by_name.iteritems():
-            for i, card in enumerate(chain(*[chain(*i.get(pname, [])) for i in hand.holecards.itervalues()])):
+            hcs = hand.join_holecards(player[1], asList=True)
+            for i, card in hcs:
                 setattr(hp, 'card%d' % i, card)
-
-        #for player in hand.players:
-        #    hcs = hand.join_holecards(player[1], asList=True)
-        #    hcs = hcs + [u'0x', u'0x', u'0x', u'0x', u'0x']
-        #    #for i, card in enumerate(hcs[:7], 1): #Python 2.6 syntax
-        #    #    self.handsplayers[player[1]]['card%s' % i] = Card.encodeCard(card)
-        #    for i, card in enumerate(hcs[:7]):
-        #        self.handsplayers[player[1]]['card%s' % (i+1)] = Card.encodeCard(card)
-
+            hp.startCards = Card.calcStartCards(hand, pname)
 
         # position,
             #Stud 3rd street card test
@@ -150,6 +143,7 @@ class DerivedStats(object):
         #  2 Hijack
 
     def assembleHudCache(self, hand):
+        # No real work to be done - HandsPlayers data already contains the correct info
         pass
 
     def vpip(self, hand):
@@ -238,9 +232,53 @@ class DerivedStats(object):
             if aggr:
                 bet_level += 1
 
+    def calcSteals(self, hand):
+        """Fills stealAttempt(Chance|ed, fold(Bb|Sb)ToSteal(Chance|)
+
+        Steal attemp - open raise on positions 2 1 0 S - i.e. MP3, CO, BU, SB
+        Fold to steal - folding blind after steal attemp wo any other callers or raisers
+        """
+        if self.gametype_dict['base'] != 'hold':
+            # FIXME: add support for other games //grindi
+            return
+        steal_attemp = False
+        for action in hand.actions[hand.actionStreets[1]]:
+            hp, act = self.handplayers_by_name[action[0]], action[1]
+            #print action[0], hp.position, steal_attemp, act
+            if hp.position == 'B':
+                hp.foldBbToStealChance = steal_attemp
+                hp.foldBbToSteal = hp.foldBbToStealChance and act == 'folds'
+                break
+            elif hp.position == 'S':
+                hp.foldSbToStealChance = steal_attemp
+                hp.foldSbToSteal = hp.foldSbToStealChance and act == 'folds'
+
+            if steal_attemp and act != 'folds':
+                break
+
+            if hp.position in ('2', '1', '0', 'S') and not steal_attemp:
+                hp.stealAttemptChance = True
+                if act in ('bets', 'raises'):
+                    hp.stealAttempted = True
+                    steal_attemp = True
+
+    def calc34BetStreet0(self, hand):
+        """Fills street0_(3|4)B(Chance|Done), other(3|4)BStreet0"""
+        bet_level = 1 # bet_level after 3-bet is equal to 3
+        for action in hand.actions[hand.actionStreets[1]]:
+            # FIXME: fill other(3|4)BStreet0 - i have no idea what does it mean
+            hp, aggr = self.handplayers_by_name[action[0]], action[1] in ('raises', 'bets')
+            hp.street0_3BChance = bet_level == 2
+            hp.street0_4BChance = bet_level == 3
+            hp.street0_3BDone =  aggr and (hp.street0_3BChance)
+            hp.street0_4BDone =  aggr and (hp.street0_4BChance)
+            if aggr:
+                bet_level += 1
+
+
     def calcCBets(self, hand):
-        """Fill streetXCBChance, streetXCBDone, foldToStreetXCBDone, foldToStreetXCBChance 
-        
+        """Fill streetXCBChance, streetXCBDone, foldToStreetXCBDone, foldToStreetXCBChance
+
         Continuation Bet chance, action:
         Had the last bet (initiative) on previous street, got called, close street action
         Then no bets before the player with initiatives first action on current street
@@ -282,6 +320,29 @@ class DerivedStats(object):
         
         streetXCheckCallRaiseChance = got raise/bet after check
         streetXCheckCallRaiseDone = checked. got raise/bet. didn't fold
+        """
+        for i, street in enumerate(hand.actionStreets[2:], start=1):
+            actions = hand.actions[hand.actionStreets[i]]
+            checkers = set()
+            initial_raiser = None
+            for action in actions:
+                pname, act = action[0], action[1]
+                if act in ('bets', 'raises') and initial_raiser is None:
+                    initial_raiser = pname
+                elif act == 'check' and initial_raiser is None:
+                    checkers.add(pname)
+                elif initial_raiser is not None and pname in checkers:
+                    hp = self.handplayers_by_name[pname]
+                    setattr(hp, 'street%dCheckCallRaiseChance' % i, True)
+                    setattr(hp, 'street%dCheckCallRaiseDone' % i, act!='folds')
+
+    def calcCheckCallRaise(self, hand):
+        """Fill streetXCheckCallRaiseChance, streetXCheckCallRaiseDone
+
+        streetXCheckCallRaiseChance = got raise/bet after check
+        streetXCheckCallRaiseDone = checked. got raise/bet. didn't fold
+
+        CG: CheckCall would be a much better name for this.
         """
         for i, street in enumerate(hand.actionStreets[2:], start=1):
             actions = hand.actions[hand.actionStreets[i]]
@@ -370,7 +431,7 @@ class DerivedStats(object):
 
     @staticmethod
     def lastBetOrRaiser(actions):
-        """Returns player name that placed the last bet or raise.
+        """Returns player name that placed the last bet or raise for that street.
             
         None if there were no bets or raises on that street
         """
