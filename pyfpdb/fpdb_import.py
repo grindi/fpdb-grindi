@@ -462,15 +462,12 @@ class Importer:
                         log.debug("Found incomplete hand (hid: %s)\nMessage: %s" 
                                   "\nHand text:\n%s\n\n\n" % (e.hid, e.value, e.hand.handText))
                     else:
+                        if self.callHud:
+                            to_hud.append(hand)
                         stored += 1
                 #self.database.commit()
                 ttimes = reduce( lambda x,y: (x[0]+y[0], x[1]+y[1]), times, (0.,0.))
                 ttime = sum(ttimes)
-
-                #pipe the Hands.id out to the HUD
-                for hid in to_hud:
-                    print "fpdb_import: sending hand to hud", hand.dbid_hands, "pipe =", self.caller.pipe_to_hud
-                    self.caller.pipe_to_hud.stdin.write("%s" % (hid) + os.linesep)
 
                 flush_time = time()
                 db.session.flush()
@@ -481,6 +478,12 @@ class Importer:
                     for hand in handlist:
                         hand.updateHudCache(self.database)
                         self.database.commit()
+
+                #pipe the Hands.id out to the HUD
+                for hand in to_hud:
+                    hid = hand.internal.id
+                    print "fpdb_import: sending hand to hud", hid, "pipe =", self.caller.pipe_to_hud
+                    self.caller.pipe_to_hud.stdin.write("%s" % (hid) + os.linesep)
 
                 log.debug('fpdb_import internal time: %lf' % time_internal)
                 log.debug('hand prepInsert total time: %lf' % ttimes[0])
