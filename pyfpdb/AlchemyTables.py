@@ -107,7 +107,7 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('card5',             CardColumn), #smallint
     Column('card6',             CardColumn), #smallint
     Column('card7',             CardColumn), #smallint
-    Column('startCards',        CardColumn), #smallint
+    Column('startCards',        SmallInteger), #smallint
         
     Column('ante',              Integer), #INT
     Column('winnings',          MoneyColumn, nullable=False, default=0), #int NOT NULL

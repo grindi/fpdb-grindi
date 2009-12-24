@@ -181,11 +181,13 @@ class fpdb_db:
         Version(self.engine)
 
         try:
+            self.version = Version.get()
             self.wrongDbVersion = Version.is_wrong()
             if self.wrongDbVersion:
                 print "outdated or too new database version - please recreate tables"
         except:
             if database !=  ":memory:": print "failed to read settings table - please recreate tables"
+            self.version = None
             self.wrongDbVersion = True
     #end def connect
 

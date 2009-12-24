@@ -959,6 +959,9 @@ class Database:
     
     def recreate_tables(self):
         """(Re-)creates the tables of the current DB"""
+
+        if self.fdb.version == 118:
+            self.fdb.engine.execute("DROP TABLE HandsActions")
         
         self.drop_tables()
         self.create_tables_and_indexes()

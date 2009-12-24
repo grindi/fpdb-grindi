@@ -389,7 +389,7 @@ class TourneyPlayer(MappedBase):
 
 class Version(object):
     """Provides read/write access for version var"""
-    CURRENT_VERSION = 118 # db version for current release
+    CURRENT_VERSION = 119 # db version for current release
 
     conn = None 
     ver  = None
@@ -407,7 +407,7 @@ class Version(object):
             try:
                 cls.ver = cls.conn.execute(select(['version'], settings_table)).fetchone()[0]
             except:
-                raise
+                return None
         return cls.ver
 
     @classmethod
