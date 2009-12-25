@@ -291,7 +291,7 @@ class PartyPoker(HandHistoryConverter):
             if key == 'HID':
                 hand.handid = info[key]
             if key == 'TOURNO':
-                hand.tourNo = info[key]
+                hand.siteTourneyNo = info[key]
             if key == 'TABLE_ID_WRAPPER':
                 if info[key] == '#':
                     # FIXME: there is no such property in Hand class
