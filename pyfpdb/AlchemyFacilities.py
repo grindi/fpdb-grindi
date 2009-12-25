@@ -54,7 +54,7 @@ class MoneyColumn(types.TypeDecorator):
     Decimal('2.3')
     """
 
-    impl = types.SmallInteger
+    impl = types.Integer
 
     def process_bind_param(self, value, dialect):
         if value is None or isinstance(value, int):
