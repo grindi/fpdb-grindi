@@ -19,6 +19,7 @@ FILLME
 
 from itertools import chain
 from collections import defaultdict
+import logging
 import sys
 
 import Card
@@ -289,13 +290,20 @@ class DerivedStats(object):
             i = i_ + 1
             prev_actions = hand.actions[hand.actionStreets[i]]
             current_actions = hand.actions[hand.actionStreets[i+1]]
-            name = self.lastBetOrRaiser(prev_actions)
+            action = self.lastBetOrRaiser(prev_actions)
 
-            if name is None or not current_actions:
+            if action is None or not current_actions \
+                    or action[-1]: # i.e. if allin
                 # no chances or cbets here
                 continue
+            name = action[0]
+
 
             chance = self.noBetsBefore(current_actions, name) 
+            if chance is None:
+                # HHC failed to determine allin or some other shit happened :(
+                logging.warning("HHC failed to determine allin. HID: %s", self.siteHandNo)
+                continue
             cb_done = chance and self.betStreet(current_actions, name)
 
             hp_cb = self.handplayers_by_name[name]
@@ -437,25 +445,29 @@ class DerivedStats(object):
 
     @staticmethod
     def lastBetOrRaiser(actions):
-        """Returns player name that placed the last bet or raise for that street.
+        """Return action for player that placed the last bet or raise for that street.
             
         None if there were no bets or raises on that street
         """
         for act in reversed(actions):
             if act[1] in ('bets', 'raises'):
-                return act[0]
+                return act
         return None
 
     @staticmethod
     def noBetsBefore(actions, pname):
-        """Returns true if there were no bets before the specified players turn, false otherwise"""
+        """Returns true if there were no bets before the specified players turn, false otherwise
+        
+        If no actions found for current player returns None. 
+        In most cases it means that player is allin
+        """
         for act in actions:
             #Must test for player first in case UTG
             if act[0] == pname:
                 return True
             elif act[1] in ('bets', 'raises'):
                 return False
-        raise Exception("Cannot find player '%s' actions at all" % pname)
+        return None
 
     @staticmethod
     def betStreet(actions, player):
