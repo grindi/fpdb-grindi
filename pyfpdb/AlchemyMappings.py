@@ -205,7 +205,8 @@ class HandInternal(DerivedStats):
 
         s+=['', '']
         for i,p in enumerate(self.handPlayers):
-            s.append('%d. %s' % (i, p.player.name or '???'))
+            s.append('%d. %s' % (i, p.name or '???'))
+            s.append(str(p))
         return '\n'.join(s)
 
     @property
@@ -328,6 +329,12 @@ class HandPlayer(MappedBase):
         for i in range(7):
             cards.append(getattr(self, 'card%d' % (i+1), None))
         return filter(bool, cards)
+
+    def __str__(self):
+        s = list()
+        for i in self._sa_class_manager.mapper.c:
+            s.append('%45s     %s' % (i, getattr(self, i.name)))
+        return '\n'.join(s)
 
 
 class Site(object):
