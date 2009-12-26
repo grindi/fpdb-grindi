@@ -135,7 +135,7 @@ class HandInternal(DerivedStats):
         if self.gametype_dict['type'] != 'tour': return
 
         # check for consistense
-        for i in ('buyin', 'siteTourneyNo'):
+        for i in ('buyin', 'tourNo'):
             if not hasattr(hand, i):
                 raise IncompleteHandError( 
                     "Field '%s' required for tournaments" % i, self.id, hand )
@@ -166,7 +166,7 @@ class HandInternal(DerivedStats):
         tour_type = TourneyType.get_or_create(session, **tour_type_index)
 
         # fetch and update tourney
-        tour  = Tourney.get_or_create(session, hand.siteTourneyNo, tour_type.id)
+        tour  = Tourney.get_or_create(session, hand.tourNo, tour_type.id)
         cols = tour.get_columns_names()
         for col in cols:
             hand_val = getattr(hand, col, None)
