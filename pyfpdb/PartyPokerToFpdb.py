@@ -83,7 +83,7 @@ class PartyPoker(HandHistoryConverter):
             ^Table\s+
             (?P<TABLE_TYPE>[^#()]+)\s+          # Regular, Speed, etc
             (?P<TABLE_ID_WRAPPER>\(|\#| )        # \# means sng, ( - mtt, nothing - cash game
-            (?P<TABLE_ID>\d+)  \)?   \s+        # it's global unique id for this table
+            (?P<TABLE_ID>\d+)  \)?   \s+        # it's global unique id for this table, not for trny
             (?:Table\s+\#(?P<TABLE_NUM>\d+).+)? # table num for mtt tournaments
             (\(No\sDP\)\s)?
             \((?P<PLAY>Real|Play)\s+Money\)\s*  
@@ -291,7 +291,7 @@ class PartyPoker(HandHistoryConverter):
             if key == 'HID':
                 hand.handid = info[key]
             if key == 'TOURNO':
-                hand.siteTourneyNo = info[key]
+                hand.tourNo = info[key]
             if key == 'TABLE_ID_WRAPPER':
                 if info[key] == '#':
                     # FIXME: there is no such property in Hand class
@@ -304,13 +304,9 @@ class PartyPoker(HandHistoryConverter):
                 else:
                     hand.buyin = info[key]
                 hand.rake = 0.
-            if key == 'TABLE_ID':
-                hand.tablename = info[key]
             if key == 'TABLE_NUM':
                 # FIXME: there is no such property in Hand class
-                if info[key] != None:
-                	hand.tablename = info[key]
-                	hand.tourNo = info['TABLE_ID']
+           	    hand.table_num = info[key]
             if key == 'COUNTED_SEATS':
                 hand.counted_seats  = info[key]
             if key == 'LEVEL':
@@ -318,6 +314,12 @@ class PartyPoker(HandHistoryConverter):
             if key == 'PLAY' and info['PLAY'] != 'Real':
                 # if realy party doesn's save play money hh
                 hand.gametype['currency'] = 'play'            
+        
+        if hand.tourNo is not None: # if trny
+            mtt_num = hand.table_num or ''
+            hand.tablename = '%s %s' % (hand.tourNo, info['TABLE_ID'])
+        else: # cash game
+            hand.tablename = info['TABLE_ID']
     
 
     def readButton(self, hand):
@@ -471,11 +473,12 @@ class PartyPoker(HandHistoryConverter):
     def getTableTitleRe(type, table_name=None, tournament = None, table_number=None):
         "Returns string to search in windows titles"
         if type=="tour":
-            print 'party', 'getTableTitleRe', "%s.+Table\s#%s" % (table_name, table_number)
-            return "%s.+Table\s#%s" % (table_name, table_number)
+            # as table_number = global table num; see readHandInfo
+            ss =  table_number
         else:
-            print 'party', 'getTableTitleRe', table_number
-            return table_name
+            ss = table_name
+        #print 'party', 'getTableTitleRe', ss
+        return ss
 
 
 def ringBlinds(ringLimit):
