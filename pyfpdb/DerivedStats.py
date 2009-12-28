@@ -118,8 +118,13 @@ class DerivedStats(object):
                 setattr(hp, 'card%d' % (i+1), card)
             hp.startCards = Card.calcStartCards(hand, pname)
 
-            if self.gametype_dict['type'] == 'tour':
-                hp.m_factor = int(float(hp.startCash) / float(self.gametype_dict['bb']))
+        if self.gametype_dict['type'] == 'tour' and self.gametype_dict['base'] == 'hold':
+            # FIXME: add Hand.ante required field \\grindi
+            # FIXME: add non-holdem calculations \\grindi
+            dead_money = float(self.gametype_dict['bb']) + float(self.gametype_dict['sb']) + \
+                    sum([float(a[3]) for a in hand.actions['BLINDSANTES'] if a[2] == 'ante'])
+            for pname, hp in self.handplayers_by_name.iteritems():
+                hp.m_factor = int(float(hp.startCash) / dead_money)
 
         # position,
             #Stud 3rd street card test

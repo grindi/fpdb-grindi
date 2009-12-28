@@ -1429,7 +1429,7 @@ class Database:
                 #move the last 6 items in WHERE clause of row from the end of the array
                 # to the beginning for the INSERT statement
                 #print "DEBUG: using INSERT: %s" % num
-                row = row[-6:] + row[:-6]
+                row = row[-7:-1] + row[:-7] + row[-1:]
                 num = cursor.execute(insert_hudcache, row)
                 #print "DEBUG: Successfully(?: %s) updated HudCacho using INSERT" % num
             else:
