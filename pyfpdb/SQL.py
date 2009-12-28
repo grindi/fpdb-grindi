@@ -1533,6 +1533,7 @@ class Sql:
                 ,street3CheckCallRaiseDone
                 ,street4CheckCallRaiseChance
                 ,street4CheckCallRaiseDone
+                ,m_factor
                 )
                 SELECT h.gametypeId
                       ,hp.playerId
@@ -1608,6 +1609,7 @@ class Sql:
                       ,sum(street3CheckCallRaiseDone)
                       ,sum(street4CheckCallRaiseChance)
                       ,sum(street4CheckCallRaiseDone)
+                      ,m_factor
                 FROM HandsPlayers hp
                 INNER JOIN Hands h ON (h.id = hp.handId)
                 <where_clause>
@@ -1617,6 +1619,7 @@ class Sql:
                         ,hc_position
                         ,hp.tourneyTypeId
                         ,date_format(h.handStart, 'd%y%m%d')
+                        ,hp.m_factor
 """
         elif db_server == 'postgresql':
             self.query['rebuildHudCache'] = """
@@ -1682,6 +1685,7 @@ class Sql:
                 ,street3CheckCallRaiseDone
                 ,street4CheckCallRaiseChance
                 ,street4CheckCallRaiseDone
+                ,m_factor
                 )
                 SELECT h.gametypeId
                       ,hp.playerId
@@ -1757,6 +1761,7 @@ class Sql:
                       ,sum(CAST(street3CheckCallRaiseDone as integer))
                       ,sum(CAST(street4CheckCallRaiseChance as integer))
                       ,sum(CAST(street4CheckCallRaiseDone as integer))
+                      ,m_factor
                 FROM HandsPlayers hp
                 INNER JOIN Hands h ON (h.id = hp.handId)
                 <where_clause>
@@ -1766,6 +1771,7 @@ class Sql:
                         ,hc_position
                         ,hp.tourneyTypeId
                         ,to_char(h.handStart, 'YYMMDD')
+                        ,hp.m_factor
 """
         else:   # assume sqlite
             self.query['rebuildHudCache'] = """
@@ -1831,6 +1837,7 @@ class Sql:
                 ,street3CheckCallRaiseDone
                 ,street4CheckCallRaiseChance
                 ,street4CheckCallRaiseDone
+                ,m_factor
                 )
                 SELECT h.gametypeId
                       ,hp.playerId
@@ -1906,6 +1913,7 @@ class Sql:
                       ,sum(CAST(street3CheckCallRaiseDone as integer))
                       ,sum(CAST(street4CheckCallRaiseChance as integer))
                       ,sum(CAST(street4CheckCallRaiseDone as integer))
+                      ,m_factor
                 FROM HandsPlayers hp
                 INNER JOIN Hands h ON (h.id = hp.handId)
                 <where_clause>
@@ -1915,6 +1923,7 @@ class Sql:
                         ,hc_position
                         ,hp.tourneyTypeId
                         ,'d' || substr(strftime('%Y%m%d', h.handStart),3,7)
+                        ,hp.m_factor
 """
 
         self.query['insert_hudcache'] = """
@@ -1979,7 +1988,8 @@ class Sql:
                 street3CheckCallRaiseChance,
                 street3CheckCallRaiseDone,
                 street4CheckCallRaiseChance,
-                street4CheckCallRaiseDone)
+                street4CheckCallRaiseDone,
+                m_factor)
             VALUES (%s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
@@ -1992,7 +2002,7 @@ class Sql:
                     %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
-                    %s)"""
+                    %s, %s)"""
 
         self.query['update_hudcache'] = """
             UPDATE HudCache SET
@@ -2056,7 +2066,8 @@ class Sql:
             AND   activeSeats=%s
             AND   position=%s
             AND   tourneyTypeId+0=%s
-            AND   styleKey=%s"""
+            AND   styleKey=%s
+            AND   m_factor=%s"""
 
         self.query['get_hero_hudcache_start'] = """select min(hc.styleKey)
                                                    from HudCache hc

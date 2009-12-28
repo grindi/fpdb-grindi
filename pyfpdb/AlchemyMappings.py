@@ -396,7 +396,9 @@ class TourneyPlayer(MappedBase):
 
 class Version(object):
     """Provides read/write access for version var"""
-    CURRENT_VERSION = 119 # db version for current release
+    CURRENT_VERSION = 120 # db version for current release
+    # 119 - first alchemy version
+    # 120 - add m_factor
 
     conn = None 
     ver  = None

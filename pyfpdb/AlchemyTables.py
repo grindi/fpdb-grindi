@@ -109,7 +109,8 @@ hands_players_table = Table('HandsPlayers', metadata,
     Column('card7',             CardColumn), #smallint
     Column('startCards',        SmallInteger), #smallint
         
-    Column('ante',              Integer), #INT
+    Column('m_factor',          Integer), # null for ring games
+    Column('ante',              MoneyColumn), #INT
     Column('winnings',          MoneyColumn, nullable=False, default=0), #int NOT NULL
     Column('rake',              MoneyColumn, nullable=False, default=0), #int NOT NULL
     Column('totalProfit',       MoneyColumn), #INT
@@ -219,6 +220,7 @@ hud_cache_table = Table('HudCache', metadata,
     Column('position',      CHAR(1)), # CHAR(1)
     Column('tourneyTypeId', Integer, ForeignKey("TourneyTypes.id") ), # SMALLINT 
     Column('styleKey',      CHAR(7), nullable=False), # CHAR(7) NOT NULL
+    Column('m_factor',      Integer),
     Column('HDs',           Integer, nullable=False), # INT NOT NULL
 
     Column('wonWhenSeenStreet1',    Float), # FLOAT

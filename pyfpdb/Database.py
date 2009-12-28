@@ -1328,142 +1328,6 @@ class Database:
 # NEWIMPORT CODE
 ###########################
 
-    def storeHand(self, p):
-        #stores into table hands:
-        q = self.sql.query['store_hand']
-
-        q = q.replace('%s', self.sql.query['placeholder'])
-
-        c = self.get_cursor()
-
-        c.execute(q, (
-                p['tableName'], 
-                p['gameTypeId'], 
-                p['siteHandNo'], 
-                p['handStart'], 
-                datetime.today(), #importtime
-                p['seats'],
-                p['maxSeats'],
-                p['texture'],
-                p['playersVpi'],
-                p['boardcard1'], 
-                p['boardcard2'], 
-                p['boardcard3'], 
-                p['boardcard4'], 
-                p['boardcard5'],
-                p['playersAtStreet1'],
-                p['playersAtStreet2'],
-                p['playersAtStreet3'],
-                p['playersAtStreet4'],
-                p['playersAtShowdown'],
-                p['street0Raises'],
-                p['street1Raises'],
-                p['street2Raises'],
-                p['street3Raises'],
-                p['street4Raises'],
-                p['street1Pot'],
-                p['street2Pot'],
-                p['street3Pot'],
-                p['street4Pot'],
-                p['showdownPot']
-        ))
-        return self.get_last_insert_id(c)
-    # def storeHand
-
-    def storeHandsPlayers(self, hid, pids, pdata):
-        #print "DEBUG: %s %s %s" %(hid, pids, pdata)
-        inserts = []
-        for p in pdata:
-            inserts.append( (hid,
-                             pids[p],
-                             pdata[p]['startCash'],
-                             pdata[p]['seatNo'],
-                             pdata[p]['card1'],
-                             pdata[p]['card2'],
-                             pdata[p]['card3'],
-                             pdata[p]['card4'],
-                             pdata[p]['card5'],
-                             pdata[p]['card6'],
-                             pdata[p]['card7'],
-                             pdata[p]['winnings'],
-                             pdata[p]['rake'],
-                             pdata[p]['totalProfit'],
-                             pdata[p]['street0VPI'],
-                             pdata[p]['street1Seen'],
-                             pdata[p]['street2Seen'],
-                             pdata[p]['street3Seen'],
-                             pdata[p]['street4Seen'],
-                             pdata[p]['sawShowdown'],
-                             pdata[p]['wonAtSD'],
-                             pdata[p]['street0Aggr'],
-                             pdata[p]['street1Aggr'],
-                             pdata[p]['street2Aggr'],
-                             pdata[p]['street3Aggr'],
-                             pdata[p]['street4Aggr'],
-                             pdata[p]['street1CBChance'],
-                             pdata[p]['street2CBChance'],
-                             pdata[p]['street3CBChance'],
-                             pdata[p]['street4CBChance'],
-                             pdata[p]['street1CBDone'],
-                             pdata[p]['street2CBDone'],
-                             pdata[p]['street3CBDone'],
-                             pdata[p]['street4CBDone'],
-                             pdata[p]['wonWhenSeenStreet1'],
-                             pdata[p]['street0Calls'],
-                             pdata[p]['street1Calls'],
-                             pdata[p]['street2Calls'],
-                             pdata[p]['street3Calls'],
-                             pdata[p]['street4Calls'],
-                             pdata[p]['street0Bets'],
-                             pdata[p]['street1Bets'],
-                             pdata[p]['street2Bets'],
-                             pdata[p]['street3Bets'],
-                             pdata[p]['street4Bets'],
-                             pdata[p]['position'],
-                             pdata[p]['tourneyTypeId'],
-                             pdata[p]['startCards'],
-                             pdata[p]['street0_3BChance'],
-                             pdata[p]['street0_3BDone'],
-                             pdata[p]['otherRaisedStreet1'],
-                             pdata[p]['otherRaisedStreet2'],
-                             pdata[p]['otherRaisedStreet3'],
-                             pdata[p]['otherRaisedStreet4'],
-                             pdata[p]['foldToOtherRaisedStreet1'],
-                             pdata[p]['foldToOtherRaisedStreet2'],
-                             pdata[p]['foldToOtherRaisedStreet3'],
-                             pdata[p]['foldToOtherRaisedStreet4'],
-                             pdata[p]['stealAttemptChance'],
-                             pdata[p]['stealAttempted'],
-                             pdata[p]['foldBbToStealChance'],
-                             pdata[p]['foldedBbToSteal'],
-                             pdata[p]['foldSbToStealChance'],
-                             pdata[p]['foldedSbToSteal'],
-                             pdata[p]['foldToStreet1CBChance'],
-                             pdata[p]['foldToStreet1CBDone'],
-                             pdata[p]['foldToStreet2CBChance'],
-                             pdata[p]['foldToStreet2CBDone'],
-                             pdata[p]['foldToStreet3CBChance'],
-                             pdata[p]['foldToStreet3CBDone'],
-                             pdata[p]['foldToStreet4CBChance'],
-                             pdata[p]['foldToStreet4CBDone'],
-                             pdata[p]['street1CheckCallRaiseChance'],
-                             pdata[p]['street1CheckCallRaiseDone'],
-                             pdata[p]['street2CheckCallRaiseChance'],
-                             pdata[p]['street2CheckCallRaiseDone'],
-                             pdata[p]['street3CheckCallRaiseChance'],
-                             pdata[p]['street3CheckCallRaiseDone'],
-                             pdata[p]['street4CheckCallRaiseChance'],
-                             pdata[p]['street4CheckCallRaiseDone']
-                            ) )
-
-        q = self.sql.query['store_hands_players']
-        q = q.replace('%s', self.sql.query['placeholder'])
-
-        #print "DEBUG: inserts: %s" %inserts
-        #print "DEBUG: q: %s" % q
-        c = self.get_cursor()
-        c.executemany(q, inserts)
-
     def storeHudCache(self, hand):
         """Update cached statistics. If update fails because no record exists, do an insert."""
 
@@ -1483,7 +1347,7 @@ class Database:
         #print "DEBUG: %s %s %s" %(hid, pids, pdata)
         inserts = []
         for hp in hand.handplayers_by_name.itervalues():
-            line = [0]*61
+            line = [0]*62
             
             line[0] = 1 # HDs
             if hp.street0VPI:                  line[1] = 1
@@ -1547,6 +1411,7 @@ class Database:
             line[58] = pos[str(hp.position)]
             line[59] = hp.tourneyTypeId
             line[60] = styleKey    # styleKey
+            line[61] = hp.m_factor
             inserts.append(line)
 
 
@@ -1570,83 +1435,6 @@ class Database:
             else:
                 #print "DEBUG: Successfully updated HudCacho using UPDATE"
                 pass
-
-    def isDuplicate(self, gametypeID, siteHandNo):
-        dup = False
-        c = self.get_cursor()
-        c.execute(self.sql.query['isAlreadyInDB'], (gametypeID, siteHandNo))
-        result = c.fetchall()
-        if len(result) > 0:
-            dup = True
-        return dup
-
-    def getGameTypeId(self, siteid, game):
-        c = self.get_cursor()
-        #FIXME: Fixed for NL at the moment
-        c.execute(self.sql.query['getGametypeNL'], (siteid, game['type'], game['category'], game['limitType'], 
-                        int(Decimal(game['sb'])*100), int(Decimal(game['bb'])*100)))
-        tmp = c.fetchone()
-        if (tmp == None):
-            hilo = "h"
-            if game['category'] in ['studhilo', 'omahahilo']:
-                hilo = "s"
-            elif game['category'] in ['razz','27_3draw','badugi']:
-                hilo = "l"
-            tmp  = self.insertGameTypes( (siteid, game['type'], game['base'], game['category'], game['limitType'], hilo,
-                                    int(Decimal(game['sb'])*100), int(Decimal(game['bb'])*100), 0, 0) )
-        return tmp[0]
-
-    def getSqlPlayerIDs(self, pnames, siteid):
-        result = {}
-        if(self.pcache == None):
-            self.pcache = LambdaDict(lambda  key:self.insertPlayer(key, siteid))
- 
-        for player in pnames:
-            result[player] = self.pcache[player]
-            # NOTE: Using the LambdaDict does the same thing as:
-            #if player in self.pcache:
-            #    #print "DEBUG: cachehit"
-            #    pass
-            #else:
-            #    self.pcache[player] = self.insertPlayer(player, siteid)
-            #result[player] = self.pcache[player]
-
-        return result
-
-    def insertPlayer(self, name, site_id):
-        result = None
-        c = self.get_cursor()
-        q = "SELECT name, id FROM Players WHERE siteid=%s and name=%s"
-        q = q.replace('%s', self.sql.query['placeholder'])
-
-        #NOTE/FIXME?: MySQL has ON DUPLICATE KEY UPDATE
-        #Usage:
-        #        INSERT INTO `tags` (`tag`, `count`)
-        #         VALUES ($tag, 1)
-        #           ON DUPLICATE KEY UPDATE `count`=`count`+1;
-
-
-        #print "DEBUG: name: %s site: %s" %(name, site_id)
-
-        c.execute (q, (site_id, name))
-
-        tmp = c.fetchone()
-        if (tmp == None): #new player
-            c.execute ("INSERT INTO Players (name, siteId) VALUES (%s, %s)".replace('%s',self.sql.query['placeholder'])
-                      ,(name, site_id))
-            #Get last id might be faster here.
-            #c.execute ("SELECT id FROM Players WHERE name=%s", (name,))
-            result = self.get_last_insert_id(c)
-        else:
-            result = tmp[1]
-        return result
-
-    def insertGameTypes(self, row):
-        c = self.get_cursor()
-        c.execute( self.sql.query['insertGameTypes'], row )
-        return [self.get_last_insert_id(c)]
-
-
 
 #################################
 # Finish of NEWIMPORT CODE

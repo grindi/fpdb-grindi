@@ -76,7 +76,7 @@ class DerivedStats(object):
         """Fills HandPlayers classes
 
         Note, that street0VPI is already filled by vpip in assembleHands
-        wonWhenSeenStreetX, wonAtSD, totalProfit, winnings, rake, cardX 
+        wonWhenSeenStreetX, wonAtSD, totalProfit, winnings, rake, cardX, m_factor 
           will be setted here directly
         """
 
@@ -117,6 +117,9 @@ class DerivedStats(object):
             for i, card in enumerate(hcs):
                 setattr(hp, 'card%d' % (i+1), card)
             hp.startCards = Card.calcStartCards(hand, pname)
+
+            if self.gametype_dict['type'] == 'tour':
+                hp.m_factor = int(float(hp.startCash) / float(self.gametype_dict['bb']))
 
         # position,
             #Stud 3rd street card test
